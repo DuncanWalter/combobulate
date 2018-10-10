@@ -1,0 +1,10 @@
+{
+  "compilerOptions": {
+    "allowSyntheticDefaultImports": true,
+    "jsx": "react",
+    "strict": true,
+    "downlevelIteration": true,
+    "target": "ES2017",
+    "moduleResolution": "node"
+  }
+}

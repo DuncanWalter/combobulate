@@ -1,0 +1,8 @@
+{
+  "extends": "./tsconfig.json",
+  "files": ["./src/main.ts"],
+  "compilerOptions": {
+    "target": "es5",
+    "lib": ["es2015", "es2016"]
+  }
+}

@@ -13,6 +13,7 @@ export function sigmoidPrime(n: number) {
 export function sigmoidTransform(): TransformationFactory {
   return ({ size }) => ({
     type: 'uniform',
+    clean() {},
     passForward(input: number[]) {
       const output = mapRow(input, sigmoid)
       return { trace: output, output }

@@ -40,6 +40,9 @@ export function pipeTransform(
       applyLearning(replacement: number) {
         transforms.forEach(({ applyLearning }) => applyLearning(replacement))
       },
+      clean() {
+        transforms.forEach(({ clean }) => clean())
+      },
       serialize() {
         return JSON.stringify(transforms.map(({ serialize }) => serialize()))
       },

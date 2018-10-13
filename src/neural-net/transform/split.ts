@@ -36,13 +36,13 @@ export function splitTransform(
 
     const transformSlices = transformFactories.map(weighted).scan(
       ({ next }, { factory, weight }, i) => {
-        const length = (size * weight) / totalWeight
+        const length = size * (weight / totalWeight)
         const transform = regularize(
           factory({ size: length, serializedContent: content[i] }),
         )
         return {
           start: Math.round(next),
-          length: Math.round(length),
+          length: Math.round(length + next) - Math.round(next),
           next: next + length,
           transform,
         }
@@ -102,6 +102,9 @@ export function splitTransform(
         transformSlices.forEach(({ transform }) =>
           transform.applyLearning(replacement),
         )
+      },
+      clean() {
+        transformSlices.forEach(({ transform }) => transform.clean())
       },
       serialize(): string {
         return JSON.stringify(

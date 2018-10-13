@@ -1,5 +1,5 @@
 /**
- * Transforms are the bread and butter of our NNs. In fact, a NN is a thin
+ * Transforms are the bread and butter of our NNs. In fact, a net is a thin
  * facade over the pipe transform, which composes other transforms together.
  * Most of the transforms are not so fancy- the dense, bias, sigmoid, and relu
  * transforms all do exactly what you'd expect. Additionally, we have the guard
@@ -12,8 +12,13 @@ export type UniformTransformation<Trace = number[]> = {
   type: 'uniform'
   serialize(): string
   applyLearning(replacement: number): void
-  passForward(input: number[]): { output: number[]; trace: Trace }
+  clean(): void
+  passForward(
+    input: number[],
+  ): // TODO getTrace: () => unknown,
+  { output: number[]; trace: Trace }
   passBack(trace: Trace, error: number[]): number[]
+  // TODO { error: number[]; trace: unknown }[]
   size: number
 }
 
@@ -21,10 +26,23 @@ export type SimplifiedTransformation = {
   type: 'simplified'
   serialize?(): string
   applyLearning?(replacement: number): void
+  clean?(): void
   passForward(input: number[]): number[]
   passBack(input: number[], error: number[]): number[]
   size: number
 }
+
+// TODO make the HOTs use this type and regularize
+// TODO in the regularize function.
+// export type HigherOrderTransformation = {
+//   type: 'higher-order'
+//   transforms: UniformTransformation
+//   applyLearning?(replacement: number): void
+//   clean?(): void
+//   passForward(input: number[]): number[]
+//   passBack(input: number[], error: number[]): number[]
+//   size: number
+// }
 
 export type Transformation =
   | UniformTransformation<unknown>
@@ -41,6 +59,7 @@ export function regularize(
       const {
         serialize = () => 'null',
         applyLearning = () => {},
+        clean = () => {},
         passForward,
         passBack,
         size,
@@ -49,6 +68,7 @@ export function regularize(
         type: 'uniform',
         serialize,
         applyLearning,
+        clean,
         passForward: input => ({ trace: input, output: passForward(input) }),
         passBack,
         size,

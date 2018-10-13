@@ -20,16 +20,16 @@ test('The xor function works', () => {
 
   for (let epoch = 0; epoch < 5000; epoch++) {
     let feedBack = []
-    // let err = 0
+    let err = 0
     for (let i in xData) {
       const { output, trace } = ann.passForward(xData[i])
       const error = [yData[i][0] - output[0]]
-      // err += Math.abs(error[0])
+      err += Math.abs(error[0])
       feedBack.push({ trace, error })
     }
-    // if (epoch % 1000 === 999) {
-    //   console.log(err / 4)
-    // }
+    if (epoch % 1000 === 999) {
+      console.log(err / 4)
+    }
     ann.passBack(feedBack)
     // break
   }

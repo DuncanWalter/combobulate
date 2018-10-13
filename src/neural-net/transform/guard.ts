@@ -8,17 +8,17 @@ export function guardTransform(
   return ({ size, serializedContent }) => {
     let min = vector(size, () => Infinity)
     let max = vector(size, () => -Infinity)
-    let dMin = [...min]
-    let dMax = [...max]
     if (serializedContent) {
       ;({ min, max } = JSON.parse(serializedContent))
     }
+    let dMin = [...min]
+    let dMax = [...max]
     return {
       type: 'simplified',
       passForward(input: number[]): number[] {
         return mapRow(input, (input, i) => {
-          dMax[i] = Math.max(input, max[i])
-          dMin[i] = Math.min(input, min[i])
+          dMax[i] = Math.max(input, dMax[i])
+          dMin[i] = Math.min(input, dMin[i])
           if (min[i] >= max[i]) return Math.random()
           return ((ceil - floor) * (input - min[i])) / (max[i] - min[i]) + floor
         })

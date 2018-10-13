@@ -9,17 +9,16 @@ import { sharpTanhTransform } from './sharpTanh'
 // Meant to provide a basic building block for
 // stable, expressive nets. Maybe stinks. Who knows.
 export function logicalTransform(outputSize: number): TransformationFactory {
-  return pipeTransform(
-    biasTransform(),
-    // splitTransform(
-    //   { weight: 1, factory: sharpTanhTransform() },
-    //   {
-    //     weight: 3,
-    //     factory: leakyReluTransform(),
-    //   },
-    // ),
-    leakyReluTransform(),
-    // biasTransform(),
-    denseTransform(outputSize),
+  return splitTransform(
+    pipeTransform(
+      denseTransform(Math.floor(outputSize * 0.75)),
+      biasTransform(),
+      leakyReluTransform(),
+    ),
+    pipeTransform(
+      denseTransform(Math.floor(outputSize * 0.15)),
+      biasTransform(),
+      sharpTanhTransform(),
+    ),
   )
 }

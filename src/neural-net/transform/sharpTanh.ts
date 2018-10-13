@@ -10,13 +10,13 @@ export function sharpTanhTransform(
       return mapRow(input, x => {
         switch (true) {
           case x < 1: {
-            return slope * (x + 1) - 1
+            return slope * (x + 1) - 1.15
           }
           case x > 1: {
-            return slope * (x - 1) + 1
+            return slope * (x - 1) + 1.15
           }
           default: {
-            return x
+            return x * 1.15
           }
         }
       })

@@ -52,4 +52,8 @@ export default class NeuralNet {
   serialize(): string {
     return this.transform.serialize()
   }
+
+  clean(): void {
+    this.transform.clean()
+  }
 }

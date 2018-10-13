@@ -1,26 +1,29 @@
 import { TransformationFactory, regularize } from '.'
-import { mapRow } from '../batchMath'
+import { mapRow, rowZip, add } from '../batchMath'
 import { identityTransform } from './identity'
 
-function weighted(
-  factory:
-    | TransformationFactory
-    | { factory: TransformationFactory; weight: number },
-): { factory: TransformationFactory; weight: number } {
-  if (factory instanceof Function) {
-    return {
-      weight: 1,
-      factory,
-    }
-  } else {
-    return factory
+// const empty: any[] = []
+const buffer: any[] = []
+function flatMap<T, U>(arr: T[], mapping: (t: T) => U[]): U[] {
+  const arrs = mapRow(arr, t => mapping(t), buffer)
+  let offset = 0
+  let size = 0
+  for (let i = 0; i < arrs.length; i++) {
+    size += arrs[i].length
   }
+  const out = new Array(size)
+  for (let i = 0; i < arrs.length; i++) {
+    const arr = arrs[i]
+    for (let j = 0; j < arr.length; j++) {
+      out[offset + j] = arr[j]
+    }
+    offset += arr.length
+  }
+  return out
 }
 
 export function splitTransform(
-  ...transformFactories: (
-    | TransformationFactory
-    | { factory: TransformationFactory; weight: number })[]
+  ...transformFactories: TransformationFactory[]
 ): TransformationFactory {
   if (transformFactories.length === 0) {
     return identityTransform()
@@ -28,93 +31,36 @@ export function splitTransform(
   return ({ size, serializedContent }) => {
     const content = serializedContent ? JSON.parse(serializedContent) : []
 
-    const totalWeight = transformFactories
-      .map(weighted)
-      .reduce((total, factory) => {
-        return total + factory.weight
-      }, 0)
-
-    const transformSlices = transformFactories.map(weighted).scan(
-      ({ next }, { factory, weight }, i) => {
-        const length = size * (weight / totalWeight)
-        const transform = regularize(
-          factory({ size: length, serializedContent: content[i] }),
-        )
-        return {
-          start: Math.round(next),
-          length: Math.round(length + next) - Math.round(next),
-          next: next + length,
-          transform,
-        }
-      },
-      { next: 0 },
-    )
+    const transforms = transformFactories
+      .map((factory, i) => factory({ size, serializedContent: content[i] }))
+      .map(regularize)
 
     return {
       type: 'uniform',
       passForward(batch: number[]) {
-        const outputs = mapRow(transformSlices, transform => {
-          const {
-            start,
-            length,
-            transform: { passForward },
-          } = transform
-          const inputSlice = batch.slice(start, start + length)
-          return passForward(inputSlice)
-        })
-        const output = Array.prototype.concat.apply(
-          [],
-          mapRow(outputs, acc => acc.output),
-        )
+        const outputs = mapRow(transforms, t => t.passForward(batch))
         return {
-          output,
-          trace: outputs.reduce(
-            (traces, output) => {
-              traces.push(output.trace)
-              return traces
-            },
-            [] as unknown[],
-          ),
+          output: flatMap(outputs, r => r.output),
+          trace: mapRow(outputs, r => r.trace),
         }
       },
       passBack(traces: unknown[], error: number[]): number[] {
-        const outputs = transformSlices.scan(
-          ({ allocated }, { transform: { size, passBack } }, i) => {
-            const output = passBack(
-              traces[i],
-              error.slice(allocated, allocated + size),
-            )
-            return {
-              output,
-              allocated: allocated + size,
-              wazzafu: error.slice(allocated, allocated + size),
-            }
-          },
-          { allocated: 0 },
-        )
-        const out = Array.prototype.concat.apply(
-          [],
-          mapRow(outputs, acc => acc.output, outputs),
-        )
-        return out
+        return mapRow(traces, (t, i) =>
+          transforms[i].passBack(t, error),
+        ).reduce((a, b) => rowZip(a, b, add, a))
       },
       applyLearning(replacement: number): void {
-        transformSlices.forEach(({ transform }) =>
-          transform.applyLearning(replacement),
-        )
+        transforms.forEach(transform => transform.applyLearning(replacement))
       },
       clean() {
-        transformSlices.forEach(({ transform }) => transform.clean())
+        transforms.forEach(transform => transform.clean())
       },
       serialize(): string {
         return JSON.stringify(
-          transformSlices.forEach(({ transform }) => transform.serialize()),
+          transforms.forEach(transform => transform.serialize()),
         )
       },
-      size: transformSlices.reduce(
-        (size, { transform }) => size + transform.size,
-        0,
-      ),
+      size: transforms.reduce((size, transform) => size + transform.size, 0),
     }
   }
 }

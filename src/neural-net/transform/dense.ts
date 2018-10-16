@@ -8,11 +8,11 @@ import {
   scaleMat,
 } from '../batchMath'
 
-export function denseTransform(
+export function denseTransform<H>(
   outputSize: number,
   seed: (i: number, j: number, n: number) => number = (i, j, n) =>
     (((i + j) % 2 === 0 ? 1 : -1) / Math.sqrt(n)) * Math.random(),
-): TransformationFactory {
+): TransformationFactory<H> {
   return ({ size: inputSize, serializedContent }) => {
     const weights = serializedContent
       ? JSON.parse(serializedContent)

@@ -1,14 +1,23 @@
-import { TransformationFactory, regularize } from '.'
+import { TransformationFactory, regularize, UniformTransformation } from '.'
 import { identityTransform } from './identity'
 import '../../utils/arrayScan'
+import { mapRow } from '../batchMath'
 
-export function pipeTransform(
-  ...transformFactories: TransformationFactory[]
-): TransformationFactory {
+export type PipeTrace<H> = {
+  history: H
+  transformations: unknown[]
+}
+
+export function pipeTransform<H>(
+  ...transformFactories: TransformationFactory<PipeTrace<H>>[]
+): TransformationFactory<H> {
   if (transformFactories.length === 0) {
     return identityTransform()
   }
-  return ({ size, serializedContent }) => {
+  return ({
+    size,
+    serializedContent,
+  }): UniformTransformation<H, PipeTrace<H>> => {
     const content = serializedContent ? JSON.parse(serializedContent) : []
     const transforms = transformFactories.scan(
       ({ size }, transformFactory, i) => {
@@ -20,22 +29,30 @@ export function pipeTransform(
     )
     return {
       type: 'uniform',
-      passForward(x: number[]) {
-        const trace = transforms.scan(
-          ({ output: x }, { passForward }) => {
-            return passForward(x)
-          },
-          { output: x },
-        )
+      passForward(input: number[], history) {
+        const trace = {
+          history,
+          transformations: new Array(transforms.length),
+        }
+        let output = input
+        for (let i = 0; i < transforms.length; i++) {
+          const tuple = transforms[i].passForward(output, trace)
+          trace.transformations[i] = tuple.trace
+          output = tuple.output
+        }
         return {
           trace,
-          output: trace[trace.length - 1].output,
+          output,
         }
       },
-      passBack(trace: any, error: number[]) {
-        return transforms.reduceRight((error, { passBack }, i) => {
-          return passBack(trace[i].trace, error)
-        }, error)
+      passBack(passes) {
+        let propagation = passes
+        for (let i = transforms.length; --i > 0; ) {
+          propagation = transforms[i].passBack(propagation)
+        }
+        return mapRow(propagation, tuple => {
+          return { trace: tuple.trace.history, error: tuple.error }
+        })
       },
       applyLearning(replacement: number) {
         transforms.forEach(({ applyLearning }) => applyLearning(replacement))

@@ -5,11 +5,12 @@ import {
   regularize,
   UniformTransformation,
 } from './transform'
+import { PipeTrace } from './transform/pipe'
 
 export default class NeuralNet {
   learningRate: number
   inputSize: number
-  transform: UniformTransformation<any>
+  transform: UniformTransformation<undefined, unknown>
 
   constructor(
     config: {
@@ -17,12 +18,12 @@ export default class NeuralNet {
       inputSize: number
       serializedContent?: string
     },
-    ...transformFactories: TransformationFactory[]
+    ...transformFactories: TransformationFactory<PipeTrace>[]
   ) {
     this.inputSize = config.inputSize
     this.learningRate = config.learningRate
-    this.transform = regularize(
-      pipeTransform(...transformFactories)({
+    this.transform = regularize<undefined>(
+      pipeTransform<undefined>(...transformFactories)({
         size: config.inputSize,
         serializedContent: config.serializedContent,
       }),
@@ -30,21 +31,20 @@ export default class NeuralNet {
   }
 
   passForward(input: number[]): { output: number[]; trace: unknown } {
-    return this.transform.passForward(input)
+    return this.transform.passForward(input, undefined)
   }
 
-  passBack(feedBack: { trace: unknown; error: number[] }[]) {
+  passBack(feedBack: { trace: PipeTrace; error: number[] }[]) {
     // TODO not utilized currently, and may not ever be so I'm
     // TODO leaving error heat-maps commented out
     // const heat = vector(this.inputSize, () => 0)
     // const mean = vector(this.inputSize, () => 0)
-    for (let { trace, error } of feedBack) {
-      const scaledError = mapRow(error, n => n * this.learningRate)
-      // const inputError =
-      this.transform.passBack(trace, scaledError)
-      // rowZip(heat, inputError, (a, b) => a + Math.abs(b), heat)
-      // rowZip(mean, inputError, (a, b) => a + b, mean)
-    }
+    // const scaledError = mapRow(error, n => n * this.learningRate)
+    // const inputError =
+    this.transform.passBack(feedBack)
+    // rowZip(heat, inputError, (a, b) => a + Math.abs(b), heat)
+    // rowZip(mean, inputError, (a, b) => a + b, mean)
+    //}
     this.transform.applyLearning(1 / feedBack.length)
     // return { heat, mean }
   }

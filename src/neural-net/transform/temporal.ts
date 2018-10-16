@@ -22,10 +22,10 @@ class RingHistory<T> {
  * caches past inputs and samples from them. This allows for fast real time
  * stream processing via one dimensional convolutions.
  */
-export function temporalTransform(
+export function temporalTransform<H>(
   samples: number,
   span: number,
-): TransformationFactory {
+): TransformationFactory<H> {
   return ({ size }) => {
     const cache = new RingHistory(
       (samples - 1) * span + 1,

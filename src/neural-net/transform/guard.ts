@@ -1,10 +1,10 @@
 import { TransformationFactory } from '.'
 import { vector, mapRow } from '../batchMath'
 
-export function guardTransform(
+export function guardTransform<H>(
   floor: number = 0,
   ceil: number = 1,
-): TransformationFactory {
+): TransformationFactory<H> {
   return ({ size, serializedContent }) => {
     let min = vector(size, () => Infinity)
     let max = vector(size, () => -Infinity)

@@ -1,66 +1,104 @@
-import { TransformationFactory, regularize } from '.'
-import { mapRow, rowZip, add } from '../batchMath'
+import { TransformationFactory, regularize, UniformTransformation } from '.'
+import { mapRow, rowZip, add, flatMap } from '../batchMath'
 import { identityTransform } from './identity'
 
-// const empty: any[] = []
-const buffer: any[] = []
-function flatMap<T, U>(arr: T[], mapping: (t: T) => U[]): U[] {
-  const arrs = mapRow(arr, t => mapping(t), buffer)
-  let offset = 0
-  let size = 0
-  for (let i = 0; i < arrs.length; i++) {
-    size += arrs[i].length
+class SumPooler<Key> {
+  activeFields: Key[]
+  discriminator: Map<Key, number[]>
+  size: number
+  constructor(size: number) {
+    this.discriminator = new Map()
+    this.activeFields = []
+    this.size = size
   }
-  const out = new Array(size)
-  for (let i = 0; i < arrs.length; i++) {
-    const arr = arrs[i]
-    for (let j = 0; j < arr.length; j++) {
-      out[offset + j] = arr[j]
+  addValues(key: Key, error: number[]): void {
+    if (!this.discriminator.has(key)) {
+      this.discriminator.set(key, new Array(this.size))
+      this.activeFields.push(key)
     }
-    offset += arr.length
+    const sum = this.discriminator.get(key)!
+    rowZip(sum, error, add, sum)
   }
-  return out
+  extractValues<T>(interpreter: (key: Key, values: number[]) => T): T[] {
+    return mapRow(this.activeFields, key =>
+      interpreter(key, this.discriminator.get(key)!),
+    )
+  }
 }
 
-export function splitTransform(
-  ...transformFactories: TransformationFactory[]
-): TransformationFactory {
+type SplitTrace<H> = {
+  history: H
+  transformations: unknown[]
+}
+
+export function splitTransform<H>(
+  ...transformFactories: TransformationFactory<SplitTrace<H>>[]
+): TransformationFactory<H> {
   if (transformFactories.length === 0) {
     return identityTransform()
   }
-  return ({ size, serializedContent }) => {
+  return ({
+    size,
+    serializedContent,
+  }): UniformTransformation<H, SplitTrace<H>> => {
     const content = serializedContent ? JSON.parse(serializedContent) : []
 
-    const transforms = transformFactories
+    const transformations = transformFactories
       .map((factory, i) => factory({ size, serializedContent: content[i] }))
       .map(regularize)
 
+    const propagationPool = new SumPooler<SplitTrace<H>>(size)
     return {
       type: 'uniform',
-      passForward(batch: number[]) {
-        const outputs = mapRow(transforms, t => t.passForward(batch))
-        return {
-          output: flatMap(outputs, r => r.output),
-          trace: mapRow(outputs, r => r.trace),
+      passForward(input: number[], history) {
+        const trace = {
+          history,
+          transformations: new Array(transformations.length),
         }
+        const output = flatMap(transformations, (transformation, i) => {
+          const tuple = transformation.passForward(input, trace)
+          trace.transformations[i] = tuple.trace
+          return tuple.output
+        })
+        return { output, trace }
       },
-      passBack(traces: unknown[], error: number[]): number[] {
-        return mapRow(traces, (t, i) =>
-          transforms[i].passBack(t, error),
-        ).reduce((a, b) => rowZip(a, b, add, a))
+      passBack(passes): { trace: H; error: number[] }[] {
+        return flatMap(passes, tuple => {
+          let offset = 0
+          for (let i = 0; i < transformations.length; i++) {
+            const propagations = transformations[i].passBack([
+              {
+                trace: tuple.trace.transformations[i],
+                error: tuple.error.slice(offset, transformations[i].size),
+              },
+            ])
+            for (let tuple of propagations) {
+              propagationPool.addValues(tuple.trace, tuple.error)
+            }
+            offset += transformations[i].size
+          }
+          return propagationPool.extractValues((trace, error) => {
+            return { trace: trace.history, error }
+          })
+        })
       },
       applyLearning(replacement: number): void {
-        transforms.forEach(transform => transform.applyLearning(replacement))
+        transformations.forEach(transform =>
+          transform.applyLearning(replacement),
+        )
       },
       clean() {
-        transforms.forEach(transform => transform.clean())
+        transformations.forEach(transform => transform.clean())
       },
       serialize(): string {
         return JSON.stringify(
-          transforms.forEach(transform => transform.serialize()),
+          transformations.map(transform => transform.serialize()),
         )
       },
-      size: transforms.reduce((size, transform) => size + transform.size, 0),
+      size: transformations.reduce(
+        (size, transform) => size + transform.size,
+        0,
+      ),
     }
   }
 }

@@ -24,17 +24,17 @@ test('The xor function works', () => {
     denseTransform(1),
   )
 
-  for (let epoch = 0; epoch < 15000; epoch++) {
+  for (let epoch = 0; epoch < 3000; epoch++) {
     let feedBack = []
-    let err = 0
+    // let err = 0
     for (let i in xData) {
       const { output, trace } = ann.passForward(xData[i])
       const error = [yData[i][0] - output[0]]
-      err += Math.abs(error[0])
+      // err += Math.abs(error[0])
       feedBack.push({ trace, error })
     }
     if (epoch % 1000 === 999) {
-      console.log(err / 4)
+      // console.log(err / 4)
     }
     ann.passBack(feedBack)
     // break

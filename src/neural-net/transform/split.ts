@@ -13,16 +13,20 @@ class SumPooler<Key> {
   }
   addValues(key: Key, error: number[]): void {
     if (!this.discriminator.has(key)) {
-      this.discriminator.set(key, new Array(this.size))
+      this.discriminator.set(key, new Array(this.size).fill(0))
       this.activeFields.push(key)
     }
     const sum = this.discriminator.get(key)!
     rowZip(sum, error, add, sum)
   }
   extractValues<T>(interpreter: (key: Key, values: number[]) => T): T[] {
-    return mapRow(this.activeFields, key =>
-      interpreter(key, this.discriminator.get(key)!),
-    )
+    const output = mapRow(this.activeFields, key => {
+      const output = interpreter(key, this.discriminator.get(key)!)
+      this.discriminator.delete(key)
+      return output
+    })
+    this.activeFields = []
+    return output
   }
 }
 
@@ -50,36 +54,33 @@ export function splitTransform<H>(
     const propagationPool = new SumPooler<SplitTrace<H>>(size)
     return {
       type: 'uniform',
-      passForward(input: number[], history) {
+      passForward(input: number[], history, config) {
         const trace = {
           history,
           transformations: new Array(transformations.length),
         }
         const output = flatMap(transformations, (transformation, i) => {
-          const tuple = transformation.passForward(input, trace)
+          const tuple = transformation.passForward(input, trace, config)
           trace.transformations[i] = tuple.trace
           return tuple.output
         })
         return { output, trace }
       },
-      passBack(passes): { trace: H; error: number[] }[] {
-        return flatMap(passes, tuple => {
-          let offset = 0
-          for (let i = 0; i < transformations.length; i++) {
-            const propagations = transformations[i].passBack([
-              {
-                trace: tuple.trace.transformations[i],
-                error: tuple.error.slice(offset, transformations[i].size),
-              },
-            ])
-            for (let tuple of propagations) {
-              propagationPool.addValues(tuple.trace, tuple.error)
-            }
-            offset += transformations[i].size
-          }
-          return propagationPool.extractValues((trace, error) => {
-            return { trace: trace.history, error }
-          })
+      passBack(trace, error, handOff, config) {
+        let offset = 0
+        for (let i = 0; i < transformations.length; i++) {
+          transformations[i].passBack(
+            trace.transformations[i],
+            error.slice(offset, offset + transformations[i].size),
+            (trace, error) => {
+              propagationPool.addValues(trace, error)
+            },
+            config,
+          )
+          offset += transformations[i].size
+        }
+        propagationPool.extractValues((trace, error) => {
+          handOff(trace.history, error)
         })
       },
       applyLearning(replacement: number): void {

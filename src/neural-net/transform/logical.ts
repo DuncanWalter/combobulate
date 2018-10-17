@@ -13,12 +13,12 @@ export function logicalTransform<H>(
 ): TransformationFactory<H> {
   return splitTransform(
     pipeTransform(
-      denseTransform(Math.floor(outputSize * 0.75)),
+      denseTransform(Math.floor(outputSize * 0.85)),
       biasTransform(),
       leakyReluTransform(),
     ),
     pipeTransform(
-      denseTransform(Math.floor(outputSize * 0.15)),
+      denseTransform(Math.ceil(outputSize * 0.15)),
       biasTransform(),
       sharpTanhTransform(),
     ),

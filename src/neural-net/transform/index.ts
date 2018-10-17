@@ -1,5 +1,3 @@
-import { mapRow } from '../batchMath'
-
 /**
  * Transforms are the bread and butter of our NNs. In fact, a net is a thin
  * facade over the pipe transform, which composes other transforms together.
@@ -10,6 +8,13 @@ import { mapRow } from '../batchMath'
  * and a few other goodies for conciseness and performance.
  */
 
+export type NetConfiguration = {
+  inputSize: number
+  training: boolean
+  learningRate: number
+  learningDecay: number
+}
+
 export type UniformTransformation<Hist, Trace = number[]> = {
   type: 'uniform'
   serialize(): string
@@ -18,10 +23,14 @@ export type UniformTransformation<Hist, Trace = number[]> = {
   passForward(
     input: number[],
     history: Hist,
+    config: NetConfiguration,
   ): { output: number[]; trace: Trace }
   passBack(
-    passes: { trace: Trace; error: number[] }[],
-  ): { error: number[]; trace: Hist }[]
+    trace: Trace,
+    error: number[],
+    handOff: (trace: Hist, error: number[]) => void,
+    config: NetConfiguration,
+  ): void
   size: number
 }
 
@@ -30,30 +39,18 @@ export type SimplifiedTransformation = {
   serialize?(): string
   applyLearning?(replacement: number): void
   clean?(): void
-  passForward(input: number[]): number[]
-  passBack(input: number[], error: number[]): number[]
+  passForward(input: number[], config: NetConfiguration): number[]
+  passBack(input: number[], error: number[], config: NetConfiguration): number[]
   size: number
 }
-
-// TODO make the HOTs use this type and regularize
-// TODO in the regularize function.
-// export type HigherOrderTransformation = {
-//   type: 'higher-order'
-//   transforms: UniformTransformation
-//   applyLearning?(replacement: number): void
-//   clean?(): void
-//   passForward(input: number[]): number[]
-//   passBack(input: number[], error: number[]): number[]
-//   size: number
-// }
 
 export type Transformation<H, T> =
   | UniformTransformation<H, T>
   | SimplifiedTransformation
 
-export function regularize<H, T>(
-  transform: Transformation<H, T>,
-): UniformTransformation<H, T> {
+export function regularize<H>(
+  transform: Transformation<H, any>,
+): UniformTransformation<H, any> {
   switch (transform.type) {
     case 'uniform': {
       return transform
@@ -67,25 +64,20 @@ export function regularize<H, T>(
         passBack,
         size,
       } = transform
-      function innerPassBack(pass: {
-        trace: { input: number[]; history: H }
-        error: number[]
-      }) {
-        return {
-          error: passBack(pass.trace.input, pass.error),
-          trace: pass.trace.history,
-        }
-      }
       return {
         type: 'uniform',
+        passForward(input, trace, config) {
+          return {
+            trace: { input, history: trace },
+            output: passForward(input, config),
+          }
+        },
+        passBack(trace, error, handOff, config) {
+          return handOff(trace.history, passBack(trace.input, error, config))
+        },
         serialize,
         applyLearning,
         clean,
-        passForward: (input, trace) => ({
-          trace: { input, history: trace },
-          output: passForward(input),
-        }),
-        passBack: passes => mapRow(passes, innerPassBack),
         size,
       }
     }

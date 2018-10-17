@@ -32,6 +32,9 @@ export function denseTransform<H>(
         matAddMat(weights, deltas, weights)
         deltas = matrix(outputSize, inputSize, () => 0)
       },
+      clean() {
+        deltas = matrix(outputSize, inputSize, () => 0)
+      },
       serialize() {
         return JSON.stringify(weights)
       },

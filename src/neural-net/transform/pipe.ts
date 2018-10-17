@@ -19,7 +19,7 @@ export function pipeTransform<H>(
     serializedContent,
   }): UniformTransformation<H, PipeTrace<H>> => {
     const content = serializedContent ? JSON.parse(serializedContent) : []
-    const transforms = transformFactories.scan(
+    const transformations = transformFactories.scan(
       ({ size }, transformFactory, i) => {
         return regularize(
           transformFactory({ size, serializedContent: content[i] }),
@@ -29,14 +29,14 @@ export function pipeTransform<H>(
     )
     return {
       type: 'uniform',
-      passForward(input: number[], history) {
+      passForward(input: number[], history, config) {
         const trace = {
           history,
-          transformations: new Array(transforms.length),
+          transformations: new Array(transformations.length),
         }
         let output = input
-        for (let i = 0; i < transforms.length; i++) {
-          const tuple = transforms[i].passForward(output, trace)
+        for (let i = 0; i < transformations.length; i++) {
+          const tuple = transformations[i].passForward(output, trace, config)
           trace.transformations[i] = tuple.trace
           output = tuple.output
         }
@@ -45,25 +45,32 @@ export function pipeTransform<H>(
           output,
         }
       },
-      passBack(passes) {
-        let propagation = passes
-        for (let i = transforms.length; --i > 0; ) {
-          propagation = transforms[i].passBack(propagation)
-        }
-        return mapRow(propagation, tuple => {
-          return { trace: tuple.trace.history, error: tuple.error }
-        })
+      passBack(trace, error, handOff, config) {
+        transformations.reduce<(trace: PipeTrace<H>, error: number[]) => void>(
+          (acc, transformation, i) => (trace, error) =>
+            transformation.passBack(
+              trace.transformations[i],
+              error,
+              acc,
+              config,
+            ),
+          (trace, error) => handOff(trace.history, error),
+        )(trace, error)
       },
       applyLearning(replacement: number) {
-        transforms.forEach(({ applyLearning }) => applyLearning(replacement))
+        transformations.forEach(({ applyLearning }) =>
+          applyLearning(replacement),
+        )
       },
       clean() {
-        transforms.forEach(({ clean }) => clean())
+        transformations.forEach(({ clean }) => clean())
       },
       serialize() {
-        return JSON.stringify(transforms.map(({ serialize }) => serialize()))
+        return JSON.stringify(
+          transformations.map(({ serialize }) => serialize()),
+        )
       },
-      size: transforms[transforms.length - 1].size,
+      size: transformations[transformations.length - 1].size,
     }
   }
 }

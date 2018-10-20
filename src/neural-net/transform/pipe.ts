@@ -1,16 +1,25 @@
-import { TransformationFactory, regularize } from '.'
+import { TransformationFactory, regularize, UniformTransformation } from '.'
 import { identityTransform } from './identity'
 import '../../utils/arrayScan'
+import { mapRow } from '../batchMath'
 
-export function pipeTransform(
-  ...transformFactories: TransformationFactory[]
-): TransformationFactory {
+export type PipeTrace<H> = {
+  history: H
+  transformations: unknown[]
+}
+
+export function pipeTransform<H>(
+  ...transformFactories: TransformationFactory<PipeTrace<H>>[]
+): TransformationFactory<H> {
   if (transformFactories.length === 0) {
     return identityTransform()
   }
-  return ({ size, serializedContent }) => {
+  return ({
+    size,
+    serializedContent,
+  }): UniformTransformation<H, PipeTrace<H>> => {
     const content = serializedContent ? JSON.parse(serializedContent) : []
-    const transforms = transformFactories.scan(
+    const transformations = transformFactories.scan(
       ({ size }, transformFactory, i) => {
         return regularize(
           transformFactory({ size, serializedContent: content[i] }),
@@ -20,30 +29,48 @@ export function pipeTransform(
     )
     return {
       type: 'uniform',
-      passForward(x: number[]) {
-        const trace = transforms.scan(
-          ({ output: x }, { passForward }) => {
-            return passForward(x)
-          },
-          { output: x },
-        )
+      passForward(input: number[], history, config) {
+        const trace = {
+          history,
+          transformations: new Array(transformations.length),
+        }
+        let output = input
+        for (let i = 0; i < transformations.length; i++) {
+          const tuple = transformations[i].passForward(output, trace, config)
+          trace.transformations[i] = tuple.trace
+          output = tuple.output
+        }
         return {
           trace,
-          output: trace[trace.length - 1].output,
+          output,
         }
       },
-      passBack(trace: any, error: number[]) {
-        return transforms.reduceRight((error, { passBack }, i) => {
-          return passBack(trace[i].trace, error)
-        }, error)
+      passBack(trace, error, handOff, config) {
+        transformations.reduce<(trace: PipeTrace<H>, error: number[]) => void>(
+          (acc, transformation, i) => (trace, error) =>
+            transformation.passBack(
+              trace.transformations[i],
+              error,
+              acc,
+              config,
+            ),
+          (trace, error) => handOff(trace.history, error),
+        )(trace, error)
       },
       applyLearning(replacement: number) {
-        transforms.forEach(({ applyLearning }) => applyLearning(replacement))
+        transformations.forEach(({ applyLearning }) =>
+          applyLearning(replacement),
+        )
+      },
+      clean() {
+        transformations.forEach(({ clean }) => clean())
       },
       serialize() {
-        return JSON.stringify(transforms.map(({ serialize }) => serialize()))
+        return JSON.stringify(
+          transformations.map(({ serialize }) => serialize()),
+        )
       },
-      size: transforms[transforms.length - 1].size,
+      size: transformations[transformations.length - 1].size,
     }
   }
 }

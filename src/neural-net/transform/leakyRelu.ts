@@ -1,9 +1,9 @@
 import { TransformationFactory } from '.'
 import { mapRow } from '../batchMath'
 
-export function leakyReluTransform(
+export function leakyReluTransform<H>(
   slope: number = 0.05,
-): TransformationFactory {
+): TransformationFactory<H> {
   return ({ size }) => ({
     type: 'simplified',
     passForward(input) {

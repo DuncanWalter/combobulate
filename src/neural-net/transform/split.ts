@@ -1,115 +1,80 @@
-import { TransformationFactory, regularize } from '.'
-import { mapRow } from '../batchMath'
+import { TransformationFactory, regularize, UniformTransformation } from '.'
+import { mapRow, rowZip, add, flatMap } from '../batchMath'
 import { identityTransform } from './identity'
 
-function weighted(
-  factory:
-    | TransformationFactory
-    | { factory: TransformationFactory; weight: number },
-): { factory: TransformationFactory; weight: number } {
-  if (factory instanceof Function) {
-    return {
-      weight: 1,
-      factory,
-    }
-  } else {
-    return factory
-  }
+type SplitTrace<H> = {
+  history: H
+  transformations: unknown[]
 }
 
-export function splitTransform(
-  ...transformFactories: (
-    | TransformationFactory
-    | { factory: TransformationFactory; weight: number })[]
-): TransformationFactory {
+export function splitTransform<H>(
+  ...transformFactories: TransformationFactory<SplitTrace<H>>[]
+): TransformationFactory<H> {
   if (transformFactories.length === 0) {
     return identityTransform()
   }
-  return ({ size, serializedContent }) => {
+  return ({
+    size,
+    serializedContent,
+  }): UniformTransformation<H, SplitTrace<H>> => {
     const content = serializedContent ? JSON.parse(serializedContent) : []
 
-    const totalWeight = transformFactories
-      .map(weighted)
-      .reduce((total, factory) => {
-        return total + factory.weight
-      }, 0)
-
-    const transformSlices = transformFactories.map(weighted).scan(
-      ({ next }, { factory, weight }, i) => {
-        const length = (size * weight) / totalWeight
-        const transform = regularize(
-          factory({ size: length, serializedContent: content[i] }),
-        )
-        return {
-          start: Math.round(next),
-          length: Math.round(length),
-          next: next + length,
-          transform,
-        }
-      },
-      { next: 0 },
-    )
+    const transformations = transformFactories
+      .map((factory, i) => factory({ size, serializedContent: content[i] }))
+      .map(regularize)
 
     return {
       type: 'uniform',
-      passForward(batch: number[]) {
-        const outputs = mapRow(transformSlices, transform => {
-          const {
-            start,
-            length,
-            transform: { passForward },
-          } = transform
-          const inputSlice = batch.slice(start, start + length)
-          return passForward(inputSlice)
-        })
-        const output = Array.prototype.concat.apply(
-          [],
-          mapRow(outputs, acc => acc.output),
-        )
-        return {
-          output,
-          trace: outputs.reduce(
-            (traces, output) => {
-              traces.push(output.trace)
-              return traces
-            },
-            [] as unknown[],
-          ),
+      passForward(input: number[], history, config) {
+        const trace = {
+          history,
+          transformations: new Array(transformations.length),
         }
+        const output = flatMap(transformations, (transformation, i) => {
+          const tuple = transformation.passForward(input, trace, config)
+          trace.transformations[i] = tuple.trace
+          return tuple.output
+        })
+        return { output, trace }
       },
-      passBack(traces: unknown[], error: number[]): number[] {
-        const outputs = transformSlices.scan(
-          ({ allocated }, { transform: { size, passBack } }, i) => {
-            const output = passBack(
-              traces[i],
-              error.slice(allocated, allocated + size),
-            )
-            return {
-              output,
-              allocated: allocated + size,
-              wazzafu: error.slice(allocated, allocated + size),
-            }
-          },
-          { allocated: 0 },
-        )
-        const out = Array.prototype.concat.apply(
-          [],
-          mapRow(outputs, acc => acc.output, outputs),
-        )
-        return out
+      // TODO: write up more cleanly
+      passBack(trace, error, handOff, config) {
+        let offset = 0
+        const truth = trace
+        const output = new Array(size).fill(0)
+        for (let i = 0; i < transformations.length; i++) {
+          transformations[i].passBack(
+            trace.transformations[i],
+            error.slice(offset, offset + transformations[i].size),
+            (trace, error) => {
+              if (trace !== truth) {
+                throw new Error(
+                  'Children of splitTransformation cannot invoke cached backwards passes for performance reasons',
+                )
+              }
+              rowZip(output, error, add, output)
+            },
+            config,
+          )
+          offset += transformations[i].size
+        }
+        handOff(trace.history, output)
       },
       applyLearning(replacement: number): void {
-        transformSlices.forEach(({ transform }) =>
+        transformations.forEach(transform =>
           transform.applyLearning(replacement),
         )
       },
+      clean() {
+        transformations.forEach(transform => transform.clean())
+      },
       serialize(): string {
         return JSON.stringify(
-          transformSlices.forEach(({ transform }) => transform.serialize()),
+          transformations.map(transform => transform.serialize()),
         )
       },
-      size: transformSlices.reduce(
-        (size, { transform }) => size + transform.size,
+      size: transformations.reduce(
+        (size, transform) => size + transform.size,
         0,
       ),
     }

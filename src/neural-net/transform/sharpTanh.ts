@@ -1,22 +1,22 @@
 import { TransformationFactory } from '.'
 import { mapRow } from '../batchMath'
 
-export function sharpTanhTransform(
+export function sharpTanhTransform<H>(
   slope: number = 0.05,
-): TransformationFactory {
+): TransformationFactory<H> {
   return ({ size }) => ({
     type: 'simplified',
     passForward(input) {
       return mapRow(input, x => {
         switch (true) {
           case x < 1: {
-            return slope * (x + 1) - 1
+            return slope * (x + 1) - 1.15
           }
           case x > 1: {
-            return slope * (x - 1) + 1
+            return slope * (x - 1) + 1.15
           }
           default: {
-            return x
+            return x * 1.15
           }
         }
       })

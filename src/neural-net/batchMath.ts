@@ -140,3 +140,28 @@ export function rowZip(
   }
   return output
 }
+
+const buffer: any[] = []
+export function flatMap<T, U>(
+  arr: T[],
+  mapping: (t: T, i: number) => U[],
+): U[] {
+  if (arr.length === 1) {
+    return mapping(arr[0], 0)
+  }
+  const arrs = mapRow(arr, (t, i) => mapping(t, i), buffer)
+  let offset = 0
+  let size = 0
+  for (let i = 0; i < arrs.length; i++) {
+    size += arrs[i].length
+  }
+  const out = new Array(size)
+  for (let i = 0; i < arrs.length; i++) {
+    const arr = arrs[i]
+    for (let j = 0; j < arr.length; j++) {
+      out[offset + j] = arr[j]
+    }
+    offset += arr.length
+  }
+  return out
+}

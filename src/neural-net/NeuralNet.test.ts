@@ -1,5 +1,11 @@
 import NeuralNet from './NeuralNet'
-import { denseTransform, guardTransform, logicalTransform } from './transform'
+import {
+  denseTransform,
+  guardTransform,
+  logicalTransform,
+  biasTransform,
+  leakyReluTransform,
+} from './transform'
 
 test('The xor function works', () => {
   // skewed xor function for testing
@@ -18,7 +24,7 @@ test('The xor function works', () => {
     denseTransform(1),
   )
 
-  for (let epoch = 0; epoch < 5000; epoch++) {
+  for (let epoch = 0; epoch < 10000; epoch++) {
     let feedBack = []
     // let err = 0
     for (let i in xData) {
@@ -27,9 +33,9 @@ test('The xor function works', () => {
       // err += Math.abs(error[0])
       feedBack.push({ trace, error })
     }
-    // if (epoch % 1000 === 999) {
-    //   console.log(err / 4)
-    // }
+    if (epoch % 1000 === 999) {
+      // console.log(err / 4)
+    }
     ann.passBack(feedBack)
     // break
   }

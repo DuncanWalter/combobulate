@@ -16,6 +16,7 @@ deploy:
   provider: npm
   email: dwalter@barlingarts.com
   api_key: $NPM_TOKEN
+  skip_cleanup: true
 branches:
   only:
     - master

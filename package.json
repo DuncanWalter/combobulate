@@ -5,7 +5,7 @@
   "main": "./lib/index.bundle.js",
   "types": "./lib/index.d.ts",
   "files": [
-    "/lib"
+    "/lib/**.*"
   ],
   "scripts": {
     "precommit": "npm run test && pretty-quick",

@@ -4,6 +4,9 @@
   "description": "Flexible neural net implementation for unstructured data.",
   "main": "./lib/index.bundle.js",
   "types": "./lib/index.d.ts",
+  "files": [
+    "/lib"
+  ],
   "scripts": {
     "precommit": "npm run test && pretty-quick",
     "prepublish": "tsc && npm run build && npm version patch",

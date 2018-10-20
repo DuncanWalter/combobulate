@@ -1,5 +1,5 @@
 import { TransformationFactory, UniformTransformation } from '.'
-import { mapRow, rowZip, add, flatMap } from '../batchMath'
+import { rowZip, add, flatMap } from '../batchMath'
 import { identityTransform } from './identity'
 import { regularize } from './regularize'
 

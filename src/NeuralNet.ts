@@ -1,4 +1,4 @@
-import { mapRow, rowZip, vector } from './batchMath'
+import { mapRow } from './batchMath'
 import {
   TransformationFactory,
   pipeTransform,
@@ -7,57 +7,49 @@ import {
 import { PipeTrace } from './transform/pipe'
 import { regularize } from './transform/regularize'
 
-// TODO: instead of using an undefined traceHistory, use a number that is used
-// TODO: to verify that all passbacks are being performed on live results
-
 export default class NeuralNet {
   learningRate: number
   learningDecay: number
   inputSize: number
   training: true
-  transform: UniformTransformation<undefined, PipeTrace<undefined>>
+  transform: UniformTransformation<number, PipeTrace<number>>
+  state: number
 
-  constructor(
-    config: {
-      learningRate: number
-      learningDecay?: number
-      inputSize: number
-      serializedContent?: string
-    },
-    ...transformFactories: TransformationFactory<PipeTrace<undefined>>[]
-  ) {
+  constructor(config: {
+    learningRate: number
+    learningDecay?: number
+    inputSize: number
+    serializedContent?: string
+    transformations: TransformationFactory<PipeTrace<number>>[]
+  }) {
     this.inputSize = config.inputSize
     this.learningRate = config.learningRate
     this.learningDecay = config.learningDecay || 1
     this.training = true
     this.transform = regularize(
-      pipeTransform<undefined>(...transformFactories)({
+      pipeTransform<number>(...config.transformations)({
         size: config.inputSize,
         serializedContent: config.serializedContent,
       }),
     )
+    this.state = 0
   }
 
-  passForward(
-    input: number[],
-  ): { output: number[]; trace: PipeTrace<undefined> } {
-    return this.transform.passForward(input, undefined, this)
+  passForward(input: number[]): { output: number[]; trace: PipeTrace<number> } {
+    return this.transform.passForward(input, this.state, this)
   }
 
-  passBack(feedBack: { trace: PipeTrace<undefined>; error: number[] }[]) {
+  passBack(feedBack: { trace: PipeTrace<number>; error: number[] }[]) {
     for (let i = 0; i < feedBack.length; i++) {
       const trace = feedBack[i].trace
       const error = feedBack[i].error
+      if (trace.history !== this.state) {
+        throw new Error('The net has been mutated since this trace was issued.')
+      }
       this.transform.passBack(
         trace,
         mapRow(error, e => e * this.learningRate),
-        trace => {
-          if (trace !== undefined) {
-            throw new Error(
-              'Neural Net passBack failed- the resulting trace was not the input history',
-            )
-          }
-        },
+        () => {},
         this,
       )
     }

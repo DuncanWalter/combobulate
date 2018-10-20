@@ -1,7 +1,6 @@
 import { TransformationFactory, UniformTransformation } from '.'
 import { identityTransform } from './identity'
 import { regularize } from './regularize'
-import { mapRow } from '../batchMath'
 import '../utils/arrayScan'
 
 export type PipeTrace<H> = {

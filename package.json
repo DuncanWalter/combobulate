@@ -6,7 +6,7 @@
   "types": "./lib/index.d.ts",
   "scripts": {
     "precommit": "npm run test && pretty-quick",
-    "prepublish": "npm run build && tsc",
+    "prepublish": "tsc && npm run build && npm version patch",
     "build": "rollup -c",
     "test": "jest"
   },

@@ -2,6 +2,15 @@
 
 A deployable, lightweight neural net implementation for all JS runtimes.
 
+# TODO:
+
+- Dropout
+- SNN Compliant activations
+- Temporal Convolutional Net testing
+- Boolean function scale-up testing
+- Serialization and hydration testing
+- Predictor mode
+
 # Getting Started With Neural Nets
 
 This is a brief introduction to the anatomy of a neural net.

@@ -1,25 +1,23 @@
 {
-  "name": "b10rl8w",
+  "name": "combobulate",
   "version": "1.0.0",
-  "description": "Central impl repository for our RL project",
-  "main": "index.js",
+  "description": "Flexible neural net implementation for unstructured data.",
+  "main": "src/index.js",
   "scripts": {
     "precommit": "npm run test && pretty-quick",
-    "dev": "node ./main.js",
-    "build-logger": "tsc --outDir ./build -p ./tsconfig.server.json",
-    "run-logger": "node ./build/main.js",
+    "build": "tsc",
     "test": "jest"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/DuncanWalter/B10RL8W.git"
+    "url": "git+https://github.com/DuncanWalter/combobulate.git"
   },
-  "author": "",
-  "license": "ISC",
+  "author": "Duncan Walter",
+  "license": "MIT",
   "bugs": {
-    "url": "https://github.com/DuncanWalter/B10RL8W/issues"
+    "url": "https://github.com/DuncanWalter/combobulate/issues"
   },
-  "homepage": "https://github.com/DuncanWalter/B10RL8W#readme",
+  "homepage": "https://github.com/DuncanWalter/combobulate#readme",
   "jest": {
     "transform": {
       "^.+\\.ts$": "ts-jest"
@@ -30,7 +28,6 @@
       "js"
     ]
   },
-  "browserslist": "last 1 Chrome versions",
   "prettier": {
     "semi": false,
     "singleQuote": true,
@@ -39,32 +36,12 @@
     "tabWidth": 2
   },
   "devDependencies": {
-    "@types/electron": "1.6.10",
-    "@types/fs-extra": "5.0.4",
-    "@types/howler": "2.0.5",
-    "@types/jest": "23.3.1",
-    "@types/koa": "2.0.46",
-    "@types/koa-route": "3.2.4",
-    "@types/react": "16.4.13",
-    "@types/react-dom": "16.0.7",
-    "husky": "0.14.3",
-    "jest": "23.5.0",
-    "parcel-bundler": "1.9.7",
-    "prettier": "1.14.2",
-    "pretty-quick": "1.6.0",
-    "ts-jest": "23.1.4",
-    "typescript": "3.0.3"
-  },
-  "dependencies": {
-    "@material-ui/core": "3.0.2",
-    "@nivo/line": "0.49.1",
-    "electron": "3.0.3",
-    "fs-extra": "7.0.0",
-    "gpu.js": "1.7.0",
-    "howler": "2.0.15",
-    "koa": "2.5.2",
-    "koa-route": "3.2.0",
-    "react": "16.4.2",
-    "react-dom": "16.4.2"
+    "@types/jest": "^23.3.1",
+    "husky": "^0.14.3",
+    "jest": "^23.5.0",
+    "prettier": "^1.14.2",
+    "pretty-quick": "^1.6.0",
+    "ts-jest": "^23.1.4",
+    "typescript": "^3.0.3"
   }
 }

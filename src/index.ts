@@ -1,6 +1,3 @@
-import NeuralNet from './NeuralNet'
-import * as Transform from './transform'
-
 /**
  * Our Neural Nets (NNs) are designed to be used as function approximators in
  * unstructured problems. They leave the implementations of loss, momentum,
@@ -14,5 +11,5 @@ import * as Transform from './transform'
  * so they don't need to be redone in the backwards pass.
  */
 
-export { NeuralNet }
-export { Transform }
+export { default as NeuralNet } from './NeuralNet'
+export * from './transform'

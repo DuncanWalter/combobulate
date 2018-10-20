@@ -24,7 +24,7 @@ test('The xor function works', () => {
     denseTransform(1),
   )
 
-  for (let epoch = 0; epoch < 3000; epoch++) {
+  for (let epoch = 0; epoch < 10000; epoch++) {
     let feedBack = []
     // let err = 0
     for (let i in xData) {

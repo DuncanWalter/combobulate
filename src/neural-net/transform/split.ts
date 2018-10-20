@@ -2,34 +2,6 @@ import { TransformationFactory, regularize, UniformTransformation } from '.'
 import { mapRow, rowZip, add, flatMap } from '../batchMath'
 import { identityTransform } from './identity'
 
-class SumPooler<Key> {
-  activeFields: Key[]
-  discriminator: Map<Key, number[]>
-  size: number
-  constructor(size: number) {
-    this.discriminator = new Map()
-    this.activeFields = []
-    this.size = size
-  }
-  addValues(key: Key, error: number[]): void {
-    if (!this.discriminator.has(key)) {
-      this.discriminator.set(key, new Array(this.size).fill(0))
-      this.activeFields.push(key)
-    }
-    const sum = this.discriminator.get(key)!
-    rowZip(sum, error, add, sum)
-  }
-  extractValues<T>(interpreter: (key: Key, values: number[]) => T): T[] {
-    const output = mapRow(this.activeFields, key => {
-      const output = interpreter(key, this.discriminator.get(key)!)
-      this.discriminator.delete(key)
-      return output
-    })
-    this.activeFields = []
-    return output
-  }
-}
-
 type SplitTrace<H> = {
   history: H
   transformations: unknown[]
@@ -51,7 +23,6 @@ export function splitTransform<H>(
       .map((factory, i) => factory({ size, serializedContent: content[i] }))
       .map(regularize)
 
-    const propagationPool = new SumPooler<SplitTrace<H>>(size)
     return {
       type: 'uniform',
       passForward(input: number[], history, config) {
@@ -66,22 +37,28 @@ export function splitTransform<H>(
         })
         return { output, trace }
       },
+      // TODO: write up more cleanly
       passBack(trace, error, handOff, config) {
         let offset = 0
+        const truth = trace
+        const output = new Array(size).fill(0)
         for (let i = 0; i < transformations.length; i++) {
           transformations[i].passBack(
             trace.transformations[i],
             error.slice(offset, offset + transformations[i].size),
             (trace, error) => {
-              propagationPool.addValues(trace, error)
+              if (trace !== truth) {
+                throw new Error(
+                  'Children of splitTransformation cannot invoke cached backwards passes for performance reasons',
+                )
+              }
+              rowZip(output, error, add, output)
             },
             config,
           )
           offset += transformations[i].size
         }
-        propagationPool.extractValues((trace, error) => {
-          handOff(trace.history, error)
-        })
+        handOff(trace.history, output)
       },
       applyLearning(replacement: number): void {
         transformations.forEach(transform =>

@@ -23,9 +23,4 @@ export function logicalTransform<H>(
       sharpTanhTransform(),
     ),
   )
-  // return pipeTransform(
-  //   biasTransform(),
-  //   leakyReluTransform(),
-  //   denseTransform(outputSize),
-  // )
 }

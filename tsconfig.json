@@ -3,7 +3,11 @@
     "allowSyntheticDefaultImports": true,
     "strict": true,
     "downlevelIteration": true,
+    "lib": ["ES6"],
     "target": "ES2015",
-    "moduleResolution": "node"
-  }
+    "moduleResolution": "node",
+    "declaration": true,
+    "outDir": "./lib"
+  },
+  "files": ["./src/index.ts"]
 }

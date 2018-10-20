@@ -1,6 +1,6 @@
 {
   "name": "combobulate",
-  "version": "1.0.1",
+  "version": "1.0.0",
   "description": "Flexible neural net implementation for unstructured data.",
   "main": "./lib/index.bundle.js",
   "types": "./lib/index.d.ts",
@@ -9,7 +9,7 @@
   ],
   "scripts": {
     "precommit": "npm run test && pretty-quick",
-    "prepublish": "tsc && npm run build && npm version patch",
+    "prepublish": "tsc && npm run build",
     "build": "rollup -c",
     "test": "jest"
   },

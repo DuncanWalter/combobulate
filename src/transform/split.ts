@@ -1,6 +1,7 @@
-import { TransformationFactory, regularize, UniformTransformation } from '.'
+import { TransformationFactory, UniformTransformation } from '.'
 import { mapRow, rowZip, add, flatMap } from '../batchMath'
 import { identityTransform } from './identity'
+import { regularize } from './regularize'
 
 type SplitTrace<H> = {
   history: H

@@ -2,10 +2,10 @@ import { mapRow, rowZip, vector } from './batchMath'
 import {
   TransformationFactory,
   pipeTransform,
-  regularize,
   UniformTransformation,
 } from './transform'
 import { PipeTrace } from './transform/pipe'
+import { regularize } from './transform/regularize'
 
 // TODO: instead of using an undefined traceHistory, use a number that is used
 // TODO: to verify that all passbacks are being performed on live results

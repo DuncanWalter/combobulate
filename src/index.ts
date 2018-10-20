@@ -14,5 +14,5 @@ import * as Transform from './transform'
  * so they don't need to be redone in the backwards pass.
  */
 
-export default NeuralNet
+export { NeuralNet }
 export { Transform }

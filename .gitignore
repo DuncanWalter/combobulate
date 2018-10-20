@@ -4,3 +4,4 @@ lib
 npm-debug.log
 !.gitignore
 !.travis.yml
+*.tgz

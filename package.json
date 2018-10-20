@@ -10,7 +10,7 @@
   ],
   "scripts": {
     "precommit": "npm run test && pretty-quick",
-    "prepublishOnly": "tsc && npm run build",
+    "prepublishOnly": "tsc && npm run build && npm pack",
     "build": "rollup -c",
     "test": "jest"
   },

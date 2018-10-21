@@ -1,7 +1,7 @@
 import NeuralNet from './NeuralNet'
 import { denseTransform, guardTransform, logicalTransform } from './transform'
 
-test('The xor function works', () => {
+test('The Neural Net Runs', () => {
   // skewed xor function for testing
   let xData = [[0, 0], [0, 37], [1, 0], [1, 37]]
   let yData = [[0], [1], [1], [0]]

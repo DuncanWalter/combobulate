@@ -61,23 +61,24 @@ export function splitTransform<H>(
         }
         handOff(trace.history, output)
       },
-      applyLearning(replacement: number): void {
-        transformations.forEach(transform =>
-          transform.applyLearning(replacement),
-        )
+      applyLearning(config) {
+        for (let transformation of transformations) {
+          transformation.applyLearning(config)
+        }
       },
       clean() {
-        transformations.forEach(transform => transform.clean())
+        for (let transformation of transformations) {
+          transformation.clean()
+        }
       },
-      serialize(): string {
+      serialize() {
         return JSON.stringify(
-          transformations.map(transform => transform.serialize()),
+          transformations.map(transformation => {
+            return transformation.serialize()
+          }),
         )
       },
-      size: transformations.reduce(
-        (size, transform) => size + transform.size,
-        0,
-      ),
+      size: transformations.map(t => t.size).reduce(add),
     }
   }
 }

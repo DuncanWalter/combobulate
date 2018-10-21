@@ -5,18 +5,23 @@ import {
   matMulCol,
   colMulRow,
   rowMulMat,
-  scaleMat,
 } from '../batchMath'
+
+const defaultSeed = (inputSize: number) => (row: number, column: number) =>
+  (((row + column) % 2 === 0 ? 1 : -1) / Math.sqrt(inputSize)) * Math.random()
 
 export function denseTransform<H>(
   outputSize: number,
-  seed: (i: number, j: number, n: number) => number = (i, j, n) =>
-    (((i + j) % 2 === 0 ? 1 : -1) / Math.sqrt(n)) * Math.random(),
+  seed: (
+    inputSize: number,
+    outputSize: number,
+  ) => (row: number, column: number) => number = defaultSeed,
 ): TransformationFactory<H> {
   return ({ size: inputSize, serializedContent }) => {
+    const initializer = seed(inputSize, outputSize)
     const weights = serializedContent
       ? JSON.parse(serializedContent)
-      : matrix(outputSize, inputSize, (i, j) => seed(i, j, inputSize))
+      : matrix(outputSize, inputSize, initializer)
     let deltas = matrix(outputSize, inputSize, () => 0)
     return {
       type: 'simplified',
@@ -27,8 +32,7 @@ export function denseTransform<H>(
         matAddMat(deltas, colMulRow(batch, error), deltas)
         return matMulCol(weights, error)
       },
-      applyLearning(replacement: number) {
-        scaleMat(replacement, deltas, deltas)
+      applyLearning() {
         matAddMat(weights, deltas, weights)
         deltas = matrix(outputSize, inputSize, () => 0)
       },

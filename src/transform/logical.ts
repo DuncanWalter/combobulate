@@ -6,8 +6,6 @@ import { biasTransform } from './bias'
 import { denseTransform } from './dense'
 import { sharpTanhTransform } from './sharpTanh'
 
-// Meant to provide a basic building block for
-// stable, expressive nets. Maybe stinks. Who knows.
 export function logicalTransform<H>(
   outputSize: number,
 ): TransformationFactory<H> {

@@ -1,3 +1,5 @@
+import { Configuration } from '../NeuralNet'
+
 /**
  * Transforms are the bread and butter of our NNs. In fact, a net is a thin
  * facade over the pipe transform, which composes other transforms together.
@@ -8,28 +10,21 @@
  * and a few other goodies for conciseness and performance.
  */
 
-export type NetConfiguration = {
-  inputSize: number
-  training: boolean
-  learningRate: number
-  learningDecay: number
-}
-
 export type UniformTransformation<Hist, Trace = number[]> = {
   type: 'uniform'
   serialize(): string
-  applyLearning(replacement: number): void
+  applyLearning(config: Configuration): void
   clean(): void
   passForward(
     input: number[],
     history: Hist,
-    config: NetConfiguration,
+    config: Configuration,
   ): { output: number[]; trace: Trace }
   passBack(
     trace: Trace,
     error: number[],
     handOff: (trace: Hist, error: number[]) => void,
-    config: NetConfiguration,
+    config: Configuration,
   ): void
   size: number
 }
@@ -37,10 +32,10 @@ export type UniformTransformation<Hist, Trace = number[]> = {
 export type SimplifiedTransformation = {
   type: 'simplified'
   serialize?(): string
-  applyLearning?(replacement: number): void
+  applyLearning?(config: Configuration): void
   clean?(): void
-  passForward(input: number[], config: NetConfiguration): number[]
-  passBack(input: number[], error: number[], config: NetConfiguration): number[]
+  passForward(input: number[], config: Configuration): number[]
+  passBack(input: number[], error: number[], config: Configuration): number[]
   size: number
 }
 
@@ -49,7 +44,7 @@ export type Transformation<H, T> =
   | SimplifiedTransformation
 
 export type TransformationFactory<H> = (
-  info: { size: number; serializedContent?: string },
+  context: { size: number; serializedContent?: string },
 ) => Transformation<H, unknown>
 
 export { denseTransform } from './dense'

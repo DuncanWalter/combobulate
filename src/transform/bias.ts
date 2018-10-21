@@ -1,14 +1,17 @@
 import { TransformationFactory } from '.'
 import { vector, rowZip, add } from '../batchMath'
 
+const defaultSeed = (size: number) => (index: number) =>
+  ((index % 2 === 0 ? 1 : -1) / Math.sqrt(size)) * Math.random()
+
 export function biasTransform<H>(
-  seed: (i: number, n: number) => number = (i, n) =>
-    ((i % 2 === 0 ? 1 : -1) / Math.sqrt(n)) * Math.random(),
+  seed: (inputSize: number) => (index: number) => number = defaultSeed,
 ): TransformationFactory<H> {
   return ({ size, serializedContent }) => {
+    const initializer = seed(size)
     const weights = serializedContent
       ? JSON.parse(serializedContent)
-      : vector(size, i => seed(i, size))
+      : vector(size, initializer)
     let deltas = vector(size, () => 0)
     return {
       type: 'simplified',
@@ -19,8 +22,8 @@ export function biasTransform<H>(
         rowZip(deltas, error, add, deltas)
         return error
       },
-      applyLearning(replacement: number) {
-        rowZip(weights, deltas, (a, b) => a + replacement * b, weights)
+      applyLearning() {
+        rowZip(weights, deltas, add, weights)
         deltas = vector(size, () => 0)
       },
       clean() {

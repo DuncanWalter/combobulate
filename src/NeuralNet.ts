@@ -7,6 +7,13 @@ import {
 import { PipeTrace } from './transform/pipe'
 import { regularize } from './transform/regularize'
 
+export type Configuration = {
+  inputSize: number
+  training: boolean
+  learningRate: number
+  learningDecay: number
+}
+
 export default class NeuralNet {
   learningRate: number
   learningDecay: number
@@ -48,12 +55,12 @@ export default class NeuralNet {
       }
       this.transform.passBack(
         trace,
-        mapRow(error, e => e * this.learningRate),
+        mapRow(error, e => (e * this.learningRate) / feedBack.length),
         () => {},
         this,
       )
     }
-    this.transform.applyLearning(1 / feedBack.length)
+    this.transform.applyLearning(this)
   }
 
   serialize(): string {

@@ -1,4 +1,5 @@
 import { TransformationFactory } from '.'
+import { mapRow } from '../batchMath'
 
 class RingHistory<T> {
   buffer: Array<T>
@@ -27,13 +28,15 @@ export function temporalTransform<H>(
   span: number,
 ): TransformationFactory<H> {
   return ({ size }) => {
-    const cache = new RingHistory(
+    const errorScale = 1 / Math.sqrt(samples)
+    const downScale = (x: number) => x * errorScale
+    let cache = new RingHistory(
       (samples - 1) * span + 1,
       new Array(size).fill(0),
     )
     return {
-      type: 'simplified',
-      passForward(input: number[]) {
+      type: 'uniform',
+      passForward(input: number[], history: H) {
         const output = new Array(size * samples)
         let i = 0
         for (; i < size; i++) {
@@ -47,10 +50,27 @@ export function temporalTransform<H>(
           }
         }
         cache.write(input)
-        return output
+        return {
+          trace: history,
+          output,
+        }
       },
-      passBack(input, error) {
-        return error.slice(0, size)
+      passBack(history: H, error, handOff) {
+        for (let s = 0; s < samples; s++) {
+          const offset = s * size
+          const errorSample = error.slice(offset, offset + size)
+          handOff(history, mapRow(errorSample, downScale, errorSample))
+        }
+      },
+      applyLearning() {},
+      clean() {
+        cache = new RingHistory(
+          (samples - 1) * span + 1,
+          new Array(size).fill(0),
+        )
+      },
+      serialize() {
+        return 'null'
       },
       size: size * samples,
     }

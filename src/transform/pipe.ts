@@ -57,17 +57,21 @@ export function pipeTransform<H>(
           (trace, error) => handOff(trace.history, error),
         )(trace, error)
       },
-      applyLearning(replacement: number) {
-        transformations.forEach(({ applyLearning }) =>
-          applyLearning(replacement),
-        )
+      applyLearning(config) {
+        for (let transformation of transformations) {
+          transformation.applyLearning(config)
+        }
       },
       clean() {
-        transformations.forEach(({ clean }) => clean())
+        for (let transformation of transformations) {
+          transformation.clean()
+        }
       },
       serialize() {
         return JSON.stringify(
-          transformations.map(({ serialize }) => serialize()),
+          transformations.map(transformation => {
+            return transformation.serialize()
+          }),
         )
       },
       size: transformations[transformations.length - 1].size,

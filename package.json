@@ -1,6 +1,6 @@
 {
   "name": "combobulate",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "Flexible neural net implementation for unstructured data.",
   "main": "./lib/index.bundle.js",
   "types": "./lib/index.d.ts",

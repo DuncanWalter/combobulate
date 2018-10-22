@@ -23,7 +23,7 @@ export function guardTransform<H>(
           return ((ceil - floor) * (input - min[i])) / (max[i] - min[i]) + floor
         })
       },
-      passBack(input: number[], error: number[]): number[] {
+      passBack(error: number[], input: number[]): number[] {
         return mapRow(error, (e, i) => {
           if (input[i] === min[i] && e < 0) return 0
           if (input[i] === max[i] && e > 0) return 0

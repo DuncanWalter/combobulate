@@ -6,7 +6,7 @@ export function identityTransform<H>(): TransformationFactory<H> {
     passForward(input) {
       return input
     },
-    passBack(input, error) {
+    passBack(error) {
       return error
     },
     size,

@@ -9,7 +9,7 @@ export function leakyReluTransform<H>(
     passForward(input) {
       return mapRow(input, x => (x > 0 ? x : x * slope))
     },
-    passBack(input, error) {
+    passBack(error, input) {
       return mapRow(input, (x, i) => (x > 0 ? error[i] : error[i] * slope))
     },
     size,

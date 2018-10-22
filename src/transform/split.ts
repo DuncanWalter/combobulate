@@ -38,23 +38,23 @@ export function splitTransform<H>(
         })
         return { output, trace }
       },
-      // TODO: write up more cleanly
       passBack(trace, error, handOff, config) {
         let offset = 0
-        const truth = trace
+        const focus = trace
         const output = new Array(size).fill(0)
+        const handle = (trace: SplitTrace<H>, error: number[]) => {
+          if (trace !== focus) {
+            throw new Error(
+              'Children of splitTransformation cannot invoke multiple or cached backwards passes for performance reasons',
+            )
+          }
+          rowZip(output, error, add, output)
+        }
         for (let i = 0; i < transformations.length; i++) {
           transformations[i].passBack(
             trace.transformations[i],
             error.slice(offset, offset + transformations[i].size),
-            (trace, error) => {
-              if (trace !== truth) {
-                throw new Error(
-                  'Children of splitTransformation cannot invoke cached backwards passes for performance reasons',
-                )
-              }
-              rowZip(output, error, add, output)
-            },
+            handle,
             config,
           )
           offset += transformations[i].size

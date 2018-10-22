@@ -18,7 +18,7 @@ export function biasTransform<H>(
       passForward(batch) {
         return rowZip(batch, weights, add)
       },
-      passBack(input: number[], error) {
+      passBack(error: number[]) {
         rowZip(deltas, error, add, deltas)
         return error
       },

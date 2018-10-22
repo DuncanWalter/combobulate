@@ -21,7 +21,7 @@ export function sharpTanhTransform<H>(
         }
       })
     },
-    passBack(input, error) {
+    passBack(error, input) {
       return mapRow(input, (x, i) => {
         if (Math.abs(x) > 1) {
           return error[i] * slope

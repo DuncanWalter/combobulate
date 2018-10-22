@@ -28,8 +28,8 @@ export function denseTransform<H>(
       passForward(batch) {
         return rowMulMat(batch, weights)
       },
-      passBack(batch: number[], error) {
-        matAddMat(deltas, colMulRow(batch, error), deltas)
+      passBack(error: number[], input) {
+        matAddMat(deltas, colMulRow(input, error), deltas)
         return matMulCol(weights, error)
       },
       applyLearning() {

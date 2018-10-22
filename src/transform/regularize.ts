@@ -19,13 +19,17 @@ export function regularize<H>(
       return {
         type: 'uniform',
         passForward(input, trace, config) {
+          const output = passForward(input, config)
           return {
-            trace: { input, history: trace },
-            output: passForward(input, config),
+            trace: { input, output, history: trace },
+            output,
           }
         },
         passBack(trace, error, handOff, config) {
-          return handOff(trace.history, passBack(trace.input, error, config))
+          return handOff(
+            trace.history,
+            passBack(error, trace.input, trace.output, config),
+          )
         },
         serialize,
         applyLearning,

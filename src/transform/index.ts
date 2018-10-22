@@ -35,7 +35,12 @@ export type SimplifiedTransformation = {
   applyLearning?(config: Configuration): void
   clean?(): void
   passForward(input: number[], config: Configuration): number[]
-  passBack(input: number[], error: number[], config: Configuration): number[]
+  passBack(
+    error: number[],
+    input: number[],
+    output: number[],
+    config: Configuration,
+  ): number[]
   size: number
 }
 

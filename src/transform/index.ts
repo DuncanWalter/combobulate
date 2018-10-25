@@ -52,13 +52,17 @@ export type TransformationFactory<H> = (
   context: { size: number; serializedContent?: string },
 ) => Transformation<H, unknown>
 
-export { denseTransform } from './dense'
 export { biasTransform } from './bias'
-export { leakyReluTransform } from './leakyRelu'
-export { splitTransform } from './split'
-export { pipeTransform } from './pipe'
-export { identityTransform } from './identity'
+export { denseTransform } from './dense'
+export { dropoutTransform } from './dropout'
+export { gaussianTransform } from './gaussian'
 export { guardTransform } from './guard'
-export { sharpTanhTransform } from './sharpTanh'
+export { identityTransform } from './identity'
+export { leakyReluTransform } from './leakyRelu'
 export { logicalTransform } from './logical'
+export { pipeTransform } from './pipe'
+export { selfNormalizingZedTransform } from './selfNormalizingZed'
+export { sharpTanhTransform } from './sharpTanh'
+export { sigmoidTransform } from './sigmoid'
+export { splitTransform } from './split'
 export { temporalTransform } from './temporal'

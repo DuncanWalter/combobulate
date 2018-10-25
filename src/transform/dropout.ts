@@ -2,7 +2,7 @@ import { TransformationFactory } from '.'
 import { mapRow, rowZip } from '../batchMath'
 
 // TODO: add bias for snn style dropouts
-export function dropoutTransformation<H>(
+export function dropoutTransform<H>(
   frequency: number,
   totality: number = 1,
 ): TransformationFactory<H> {
@@ -25,13 +25,13 @@ export function dropoutTransformation<H>(
         if (config.training) {
           return rowZip(input, output, (x, y, i) => {
             if (x !== y) {
-              return error[i] * (1 - totality)
+              return (error[i] / c) * (1 - totality)
             } else {
-              return error[i]
+              return error[i] / c
             }
           })
         } else {
-          return error
+          throw new Error('Cannot perform backwards pass in non-training mode.')
         }
       },
       size,

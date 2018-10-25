@@ -70,4 +70,17 @@ export default class NeuralNet {
   clean(): void {
     this.transform.clean()
   }
+
+  createPredictor(): (input: number[]) => number[] {
+    const transform = this.transform
+    const config = {
+      inputSize: this.inputSize,
+      learningRate: this.learningRate,
+      learningDecay: this.learningDecay,
+      training: false,
+    }
+    return function predict(input: number[]): number[] {
+      return transform.passForward(input, -1, config).output
+    }
+  }
 }

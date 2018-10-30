@@ -16,7 +16,7 @@ A deployable, lightweight neural net implementation for all JS runtimes.
 
 This is a brief introduction to the anatomy of a neural net.
 
-Neural nets are objects which approximate a target function `f` via a process called gradient decent. Lot's of people like to explain neural nets with healthy doses of greek letters, linear algebra, and lots and lots of Einstein sums. I found that approach unhelpful, and hope this little intro serves as a practical intro to neural nets for ~~dummies~~ engineers like myself. As a contrived example, we'll consider the `xor` function:
+Neural nets are objects which approximate a target function `f` via a process called gradient decent. I hope this little intro serves as a practical intro to neural nets for ~~dummies~~ engineers like myself; I won't be using any ancient alphabets or college level math in this explanation. As a contrived example, we'll consider the `xor` function:
 
 ```javascript
 xor(false, false) // false
@@ -25,13 +25,9 @@ xor(true, false) // true
 xor(true, true) // false
 ```
 
-The `xor` function takes two booleans and returns a boolean. Simple enough. There is absolutely no reason to ever use a neural net to approximate `xor`, but we're going to do it anyway. Besides, the general process is the same for approximating any function:
+The `xor` function takes two booleans and returns a boolean. Simple enough. There is absolutely no reason to ever use a neural net to approximate `xor`, but we're going to do it anyway.
 
-1. Translate the target function to accept and return number arrays
-2. Gather some input-output pairs of the translated function
-3. Follow the procedure of gradient decent
-
-So the first step is to make the function 'accept and return number arrays.' This is because neural nets are build on matrix multiplication and numeric functions; they won't understand other input types. For `xor`, this is super easy:
+So the first step is to make the function accept and return number arrays. This is because neural nets operate on number arrays. They won't understand other input types. For `xor`, this is straightforward:
 
 ```javascript
 xor([0, 0]) // [0]
@@ -40,9 +36,9 @@ xor([1, 0]) // [1]
 xor([1, 1]) // [0]
 ```
 
-This representation of `xor` will work for us, but I should stop to point out some of the bad things that happen to functions when they are abused this way. Firstly, the function used to only have four cases because there are only four possible ways to pair up `true` and `false`. Now, some smart-alec (you, later in this intro) could enter a value like `[0.5, 2]` into the function. Similarly, there are now way more possible outputs. Anyhoo, we have completed the first step of the process.
+This representation of `xor` will work for us, but I should stop to point out some of the bad things that happen to functions when they are abused this way. Firstly, the function used to only have four cases because there are only four possible ways to pair up `true` and `false`. Now, some smart-alec (you, later in this intro) could enter a value like `[0.5, 2]` into the function. Similarly, there are now infinite possible outputs.
 
-The next thing on the checklist is to 'gather some input-output pairs.' In general, this means taking data and splitting it into two camps: the data we will hand the neural net, and the data we want it to spit out. In the case of `xor`, we want to hand the net two input pseudo-booleans and have it return the correct pseudo-boolean value.
+The next thing on the checklist is to gather some input-output pairs. In general, this means taking data and splitting it into two camps: the data we will hand the neural net, and the data we want it to spit out. In the case of `xor`, we want to hand the net two input pseudo-booleans and have it return the correct pseudo-boolean value.
 
 ```javascript
 // often called 'X'

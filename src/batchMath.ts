@@ -125,12 +125,12 @@ export function scaleMat(
   return output
 }
 
-export function rowZip(
-  a: number[],
-  b: number[],
-  zip: (a: number, b: number, i: number) => number,
-  out?: number[],
-): number[] {
+export function rowZip<L, R, O>(
+  a: L[],
+  b: R[],
+  zip: (a: L, b: R, i: number) => O,
+  out?: any[],
+): O[] {
   const output = out !== undefined ? out : new Array(a.length)
   for (let i = 0; i < a.length; i++) {
     output[i] = zip(a[i], b[i], i)

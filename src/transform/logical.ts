@@ -6,16 +6,21 @@ import { denseTransform } from './dense'
 import { selfNormalizingZedTransform } from './selfNormalizingZed'
 
 export function logicalTransform(outputSize: number) {
-  return splitTransform(
-    pipeTransform(
-      denseTransform(Math.ceil(outputSize * 0.5)),
-      biasTransform(),
-      leakyReluTransform(),
-    ),
-    pipeTransform(
-      denseTransform(Math.floor(outputSize * 0.5)),
-      biasTransform(),
-      selfNormalizingZedTransform(),
-    ),
+  // return splitTransform(
+  //   pipeTransform(
+  //     denseTransform(Math.ceil(outputSize * 0.8)),
+  //     biasTransform(),
+  //     leakyReluTransform(),
+  //   ),
+  //   pipeTransform(
+  //     denseTransform(Math.floor(outputSize * 0.2)),
+  //     biasTransform(),
+  //     selfNormalizingZedTransform(),
+  //   ),
+  // )
+  return pipeTransform(
+    denseTransform(outputSize),
+    biasTransform(),
+    leakyReluTransform(),
   )
 }

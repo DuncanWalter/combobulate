@@ -1,6 +1,8 @@
-import { TransformationFactory } from '.'
+import { TransformationFactory, SimplifiedTransformation } from '.'
 
-export function identityTransform<H>(): TransformationFactory<H> {
+export function identityTransform(): TransformationFactory<
+  SimplifiedTransformation<unknown>
+> {
   return ({ size }) => ({
     type: 'simplified',
     passForward(input) {

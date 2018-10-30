@@ -1,10 +1,10 @@
-import { TransformationFactory } from '.'
+import { TransformationFactory, SimplifiedTransformation } from '.'
 import { mapRow } from '../batchMath'
 
-export function gaussianTransform<H>(
+export function gaussianTransform(
   mean: number,
   variance: number,
-): TransformationFactory<H> {
+): TransformationFactory {
   return ({ size }) => ({
     type: 'simplified',
     passForward(input) {

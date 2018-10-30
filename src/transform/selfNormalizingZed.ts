@@ -18,10 +18,10 @@ const zedPrime = (a: number, b: number) => (x: number) => {
   return Math.abs(x) < 1 ? a : b
 }
 
-const fp = zoom(0.65, zed(1.4, 0.05))
-const bp = zoom(0.65, zedPrime(1.4, 0.05))
+const fp = zoom(0.55, zed(1.95, 0.05))
+const bp = zoom(0.55, zedPrime(1.95, 0.05))
 
-export function selfNormalizingZedTransform<H>(): TransformationFactory<H> {
+export function selfNormalizingZedTransform(): TransformationFactory {
   return function dropoutFactory({ size }) {
     return {
       type: 'simplified',

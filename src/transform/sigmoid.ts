@@ -1,7 +1,7 @@
 import { TransformationFactory } from '.'
 import { mapRow } from '../batchMath'
 
-export function sigmoidTransform<H>(): TransformationFactory<H> {
+export function sigmoidTransform(): TransformationFactory {
   return ({ size }) => ({
     type: 'simplified',
     passForward(input) {

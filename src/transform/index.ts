@@ -1,5 +1,3 @@
-import { Configuration } from '../NeuralNet'
-
 /**
  * Transforms are the bread and butter of our NNs. In fact, a net is a thin
  * facade over the pipe transform, which composes other transforms together.
@@ -10,7 +8,11 @@ import { Configuration } from '../NeuralNet'
  * and a few other goodies for conciseness and performance.
  */
 
-export type UniformTransformation<Hist, Trace = number[]> = {
+export type UniformTransformation<
+  Hist,
+  Trace = number[],
+  Configuration = {}
+> = {
   type: 'uniform'
   serialize(): string
   applyLearning(config: Configuration): void
@@ -29,7 +31,7 @@ export type UniformTransformation<Hist, Trace = number[]> = {
   size: number
 }
 
-export type SimplifiedTransformation = {
+export type SimplifiedTransformation<Configuration = {}> = {
   type: 'simplified'
   serialize?(): string
   applyLearning?(config: Configuration): void
@@ -44,25 +46,25 @@ export type SimplifiedTransformation = {
   size: number
 }
 
-export type Transformation<H, T> =
-  | UniformTransformation<H, T>
-  | SimplifiedTransformation
+export type Transformation<H, T, C> =
+  | UniformTransformation<H, T, C>
+  | SimplifiedTransformation<C>
 
-export type TransformationFactory<H> = (
-  context: { size: number; serializedContent?: string },
-) => Transformation<H, unknown>
+export type TransformationFactory<
+  T extends Transformation<any, any, any> = SimplifiedTransformation
+> = (context: { size: number; serializedContent?: string }) => T
 
 export { biasTransform } from './bias'
 export { denseTransform } from './dense'
 export { dropoutTransform } from './dropout'
-export { gaussianTransform } from './gaussian'
+// export { gaussianTransform } from './gaussian'
 export { guardTransform } from './guard'
 export { identityTransform } from './identity'
 export { leakyReluTransform } from './leakyRelu'
 export { logicalTransform } from './logical'
 export { pipeTransform } from './pipe'
-export { selfNormalizingZedTransform } from './selfNormalizingZed'
+// export { selfNormalizingZedTransform } from './selfNormalizingZed'
 export { sharpTanhTransform } from './sharpTanh'
-export { sigmoidTransform } from './sigmoid'
+// export { sigmoidTransform } from './sigmoid'
 export { splitTransform } from './split'
 export { temporalTransform } from './temporal'

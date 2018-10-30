@@ -1,14 +1,16 @@
-import { TransformationFactory } from '.'
-import { vector, rowZip, add } from '../batchMath'
+import { TransformationFactory, SimplifiedTransformation } from '.'
+import { vector, rowZip, add, mapRow } from '../batchMath'
 
-const defaultSeed = (size: number) => (index: number) =>
+type BiasSeeder = (inputSize: number) => (index: number) => number
+
+const defaultSeed: BiasSeeder = size => index =>
   ((index % 2 === 0 ? 1 : -1) / Math.sqrt(size)) * Math.random()
 
-export function biasTransform<H>(
-  seed: (inputSize: number) => (index: number) => number = defaultSeed,
-): TransformationFactory<H> {
-  return ({ size, serializedContent }) => {
-    const initializer = seed(size)
+export function biasTransform(
+  seeder: BiasSeeder = defaultSeed,
+): TransformationFactory<SimplifiedTransformation<{ learningRate: number }>> {
+  return function biasFactory({ size, serializedContent }) {
+    const initializer = seeder(size)
     const weights = serializedContent
       ? JSON.parse(serializedContent)
       : vector(size, initializer)
@@ -22,7 +24,8 @@ export function biasTransform<H>(
         rowZip(deltas, error, add, deltas)
         return error
       },
-      applyLearning() {
+      applyLearning(config) {
+        mapRow(deltas, x => config.learningRate * x, deltas)
         rowZip(weights, deltas, add, weights)
         deltas = vector(size, () => 0)
       },

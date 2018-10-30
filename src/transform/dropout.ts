@@ -1,11 +1,11 @@
-import { TransformationFactory } from '.'
+import { TransformationFactory, SimplifiedTransformation } from '.'
 import { mapRow, rowZip } from '../batchMath'
 
 // TODO: add bias for snn style dropouts
-export function dropoutTransform<H>(
+export function dropoutTransform(
   frequency: number,
   totality: number = 1,
-): TransformationFactory<H> {
+): TransformationFactory<SimplifiedTransformation<{ training: boolean }>> {
   const drop = (x: number) => (1 - totality) * x
   const c = 1 / (1 - frequency * totality)
   const scale = (x: number) => c * x

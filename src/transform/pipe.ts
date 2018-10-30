@@ -1,6 +1,6 @@
-import { TransformationFactory, UniformTransformation } from '.'
+import { TransformationFactory, Transformation } from '.'
 import { identityTransform } from './identity'
-import { regularize } from './regularize'
+import { regularize, Config } from './regularize'
 import '../utils/arrayScan'
 
 export type PipeTrace<H> = {
@@ -8,16 +8,22 @@ export type PipeTrace<H> = {
   transformations: unknown[]
 }
 
-export function pipeTransform<H>(
-  ...transformFactories: TransformationFactory<PipeTrace<H>>[]
-): TransformationFactory<H> {
+export function pipeTransform<
+  H,
+  TFs extends TransformationFactory<Transformation<any, any, any>>[]
+>(
+  ...transformFactories: TFs
+): TransformationFactory<Transformation<H, PipeTrace<H>, Config<TFs[number]>>> {
   if (transformFactories.length === 0) {
     return identityTransform()
   }
-  return ({
+  return function({
     size,
     serializedContent,
-  }): UniformTransformation<H, PipeTrace<H>> => {
+  }: {
+    size: number
+    serializedContent?: string
+  }) {
     const content = serializedContent ? JSON.parse(serializedContent) : []
     const transformations = transformFactories.scan(
       ({ size }, transformFactory, i) => {

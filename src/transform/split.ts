@@ -1,23 +1,25 @@
-import { TransformationFactory, UniformTransformation } from '.'
+import { TransformationFactory, Transformation } from '.'
 import { rowZip, add, flatMap } from '../batchMath'
 import { identityTransform } from './identity'
-import { regularize } from './regularize'
+import { regularize, Config } from './regularize'
 
 type SplitTrace<H> = {
   history: H
   transformations: unknown[]
 }
 
-export function splitTransform<H>(
-  ...transformFactories: TransformationFactory<SplitTrace<H>>[]
-): TransformationFactory<H> {
+export function splitTransform<
+  H,
+  TFs extends TransformationFactory<Transformation<any, any, any>>[]
+>(
+  ...transformFactories: TFs
+): TransformationFactory<
+  Transformation<H, SplitTrace<H>, Config<TFs[number]>>
+> {
   if (transformFactories.length === 0) {
     return identityTransform()
   }
-  return ({
-    size,
-    serializedContent,
-  }): UniformTransformation<H, SplitTrace<H>> => {
+  return ({ size, serializedContent }) => {
     const content = serializedContent ? JSON.parse(serializedContent) : []
 
     const transformations = transformFactories

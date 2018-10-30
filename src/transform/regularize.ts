@@ -1,8 +1,17 @@
-import { Transformation, UniformTransformation } from '.'
+import { Transformation, UniformTransformation, TransformationFactory } from '.'
+import { Intersection } from '../utils/types'
 
-export function regularize<H>(
-  transform: Transformation<H, any>,
-): UniformTransformation<H, any> {
+type Configs<TFs> = TFs extends TransformationFactory<
+  Transformation<any, any, infer C>
+>
+  ? C
+  : never
+
+export type Config<TFs> = Intersection<Configs<TFs>>
+
+export function regularize<H, C>(
+  transform: Transformation<H, any, C>,
+): UniformTransformation<H, any, C> {
   switch (transform.type) {
     case 'uniform': {
       return transform

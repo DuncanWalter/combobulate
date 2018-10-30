@@ -1,4 +1,4 @@
-import { TransformationFactory } from '.'
+import { TransformationFactory, UniformTransformation } from '.'
 import { mapRow } from '../batchMath'
 
 class RingHistory<T> {
@@ -23,10 +23,11 @@ class RingHistory<T> {
  * caches past inputs and samples from them. This allows for fast real time
  * stream processing via one dimensional convolutions.
  */
+// TODO: make this not keep traces if not training
 export function temporalTransform<H>(
   samples: number,
   span: number,
-): TransformationFactory<H> {
+): TransformationFactory<UniformTransformation<H, unknown>> {
   return ({ size }) => {
     const errorScale = 1 / Math.sqrt(samples)
     const downScale = (x: number) => x * errorScale

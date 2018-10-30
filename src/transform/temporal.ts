@@ -24,10 +24,13 @@ class RingHistory<T> {
  * stream processing via one dimensional convolutions.
  */
 // TODO: make this not keep traces if not training
+// TODO: make this store history of other traces
 export function temporalTransform<H>(
   samples: number,
   span: number,
-): TransformationFactory<UniformTransformation<H, unknown>> {
+): TransformationFactory<
+  UniformTransformation<H, unknown, { training: boolean }>
+> {
   return ({ size }) => {
     const errorScale = 1 / Math.sqrt(samples)
     const downScale = (x: number) => x * errorScale

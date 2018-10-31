@@ -11,6 +11,7 @@
  * so they don't need to be redone in the backwards pass.
  */
 
+export { createModel } from './createModel'
 export { createPredictor } from './createPredictor'
 export { default as NeuralNet } from './NeuralNet'
 export * from './transform'

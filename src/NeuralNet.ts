@@ -70,28 +70,6 @@ export default class NeuralNet<
     this.transform.clean()
   }
 
-  // createPredictor(): (input: number[]) => number[] {
-  //   const transform = this.transform
-  //   const config = { training: false, learningRate: 0, inertia: 0 }
-  //   return function predict(input: number[]): number[] {
-  //     return transform.passForward(input, -1, config).output
-  //   }
-  // }
-
-  // createModel(config: {
-  //   learningRate: number | ((epoch: number) => number)
-  //   batchSize: number | ((epoch: number) => number)
-  //   truth: {
-  //     type: 'absolute',
-  //     pairs: {input: number[], output: number[]},
-
-  //   }
-
-  //   loss: { derivative(x: number): number }
-  // }): { train(epochs?: number): void } {
-
-  // }
-
   clone() {
     return new NeuralNet({
       transformations: this.transformations,

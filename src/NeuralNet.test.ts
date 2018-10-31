@@ -2,21 +2,17 @@ import NeuralNet from './NeuralNet'
 import { denseTransform, guardTransform, logicalTransform } from './transform'
 import { createPredictor } from './createPredictor'
 import { rowZip } from './batchMath'
+import { createModel } from './createModel'
 const { random, floor } = Math
 
-function mean(xs: number[]) {
-  let sum = 0
-  for (let x of xs) {
-    sum += x
-  }
-  return sum / xs.length
-}
+// Allow tests to run longer than
+// the default 5000ms without calling
+// the done function when async
+jest.setTimeout(1000000)
 
-function sharpen(x: number) {
-  const scale = Math.abs(2 * x - 1) ** 0.5
-  return x > 0.5 ? scale : 1 - scale
-}
-
+// Numeric versions of all arity-2
+// boolean functions for generating
+// NN evaluation functions.
 const not = a => 1 - a
 const and = (a, b) => Math.sqrt(a * b)
 const or = (a, b) => (a + b) / (1 + a * b)
@@ -26,9 +22,19 @@ const imp = (a, b) => or(not(a), b)
 const nimp = (a, b) => not(imp(b, a))
 const xor = (a, b) => or(a, b) - and(a, b)
 const eq = (a, b) => not(xor(a, b))
-
 const ops = [and, or, nor, nand, imp, nimp, xor, eq]
 
+// Preserve a reasonable distribution
+// of outputs in high-arity operations
+// to enable more expressive evaluations
+function sharpen(x: number) {
+  const scale = Math.abs(2 * x - 1) ** 0.5
+  return x > 0.5 ? scale : 1 - scale
+}
+
+// Generate a higher arity numeric
+// operator to test the expressiveness
+// and stability of neural nets
 function createOperation(arity: number) {
   if (arity === 1) {
     return (input: number[]) => input[0]
@@ -51,9 +57,17 @@ function createOperation(arity: number) {
   }
 }
 
-test('The Neural Net Runs', () => {
-  const arity = 5
-  const samples = 2 ** arity
+function mean(xs: number[]) {
+  let sum = 0
+  for (let x of xs) {
+    sum += x
+  }
+  return sum / xs.length
+}
+
+test('The Neural Net Runs', done => {
+  const arity = 2
+  const samples = 32
   const operation = createOperation(arity)
 
   function sampleOperation() {
@@ -68,6 +82,8 @@ test('The Neural Net Runs', () => {
 
   const validationData = sampleOperation()
 
+  // A baseline random model for
+  // evaluating model success.
   console.log(
     'Random:',
     `10e${Math.log10(
@@ -79,47 +95,41 @@ test('The Neural Net Runs', () => {
     ).toPrecision(3)}`,
   )
 
-  let ann = new NeuralNet({
+  let net = new NeuralNet({
     inputSize: arity,
     transformations: [
       guardTransform(),
-      denseTransform(48),
-      logicalTransform(36),
+      denseTransform(24),
+      logicalTransform(16),
       logicalTransform(8),
       denseTransform(1),
     ],
   })
 
-  let config = { learningRate: 0.008 }
+  const config = { learningRate: 0.008 }
+  const predict = createPredictor(net, config)
+  const model = createModel(net, {
+    config: () => config,
+    batch: sampleOperation,
+    error: {
+      value: (target, prediction) => 0.5 * (target - prediction) ** 2,
+      derivative: (target, prediction) => target - prediction,
+    },
+  })
 
-  const predict = createPredictor(ann, config)
-
-  let epoch = 0
-  function evaluate() {
+  function validate(epoch: number) {
     console.log(
       `Epoch ${epoch}: 10e${Math.log10(
         mean(
           rowZip(
             validationData.map(pair => pair.output),
             validationData.map(pair => pair.input).map(predict),
-            (t, p) => rowZip(t, p, (t, p) => Math.abs(t - p)),
+            (t, p) => rowZip(t, p, (t, p) => 0.5 * (t - p) ** 2),
           ).map(mean),
         ),
       ).toPrecision(3)}`,
     )
   }
 
-  evaluate()
-  for (epoch = 1; epoch <= 10000; epoch++) {
-    ann.passBack(
-      sampleOperation().map(({ input, output: target }) => {
-        const { trace, output: prediction } = ann.passForward(input, config)
-        return { trace, error: rowZip(target, prediction, (t, p) => t - p) }
-      }),
-      config,
-    )
-    if (epoch % 1000 === 0) {
-      evaluate()
-    }
-  }
+  model.train(5000, validate).then(done)
 })

@@ -65,8 +65,8 @@ function mean(xs: number[]) {
   return sum / xs.length
 }
 
-test('The Neural Net Runs', done => {
-  const arity = 2
+test('Creating, training, and validating a model runs without crashing', done => {
+  const arity = 4
   const samples = 32
   const operation = createOperation(arity)
 
@@ -106,7 +106,7 @@ test('The Neural Net Runs', done => {
     ],
   })
 
-  const config = { learningRate: 0.008 }
+  const config = { learningRate: 0.005, inertia: 0.7 }
   const predict = createPredictor(net, config)
   const model = createModel(net, {
     config: () => config,

@@ -8,7 +8,9 @@ const defaultSeed: BiasSeeder = size => index =>
 
 export function biasTransform(
   seeder: BiasSeeder = defaultSeed,
-): TransformationFactory<SimplifiedTransformation<{ learningRate: number }>> {
+): TransformationFactory<
+  SimplifiedTransformation<{ learningRate: number; inertia?: number }>
+> {
   return function biasFactory({ size, serializedContent }) {
     const initializer = seeder(size)
     const weights = serializedContent
@@ -25,9 +27,11 @@ export function biasTransform(
         return error
       },
       applyLearning(config) {
-        mapRow(deltas, x => config.learningRate * x, deltas)
-        rowZip(weights, deltas, add, weights)
-        deltas = vector(size, () => 0)
+        const { learningRate, inertia = 0 } = config
+        const dialation = 1 / (1 - inertia)
+        const update = mapRow(deltas, x => (learningRate * x) / dialation)
+        rowZip(weights, update, add, weights)
+        mapRow(deltas, x => (x * (dialation - 1)) / dialation, deltas)
       },
       clean() {
         deltas = vector(size, () => 0)

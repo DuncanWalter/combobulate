@@ -19,7 +19,12 @@ const defaultSeeder: DenseSeeder = inputSize => (row, column) =>
 export function denseTransform(
   outputSize: number,
   seeder: DenseSeeder = defaultSeeder,
-): TransformationFactory<SimplifiedTransformation<{ learningRate: number }>> {
+): TransformationFactory<
+  SimplifiedTransformation<{
+    learningRate: number
+    inertia?: number
+  }>
+> {
   return function denseFactory({ size: inputSize, serializedContent }) {
     const initializer = seeder(inputSize, outputSize)
     const weights = serializedContent
@@ -36,9 +41,11 @@ export function denseTransform(
         return matMulCol(weights, error)
       },
       applyLearning(config) {
-        scaleMat(config.learningRate, deltas, deltas)
-        matAddMat(weights, deltas, weights)
-        deltas = matrix(outputSize, inputSize, () => 0)
+        const { learningRate, inertia = 0 } = config
+        const dialation = 1 / (1 - inertia)
+        const update = scaleMat(learningRate / dialation, deltas)
+        matAddMat(weights, update, weights)
+        scaleMat((dialation - 1) / dialation, deltas, deltas)
       },
       clean() {
         deltas = matrix(outputSize, inputSize, () => 0)

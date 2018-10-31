@@ -100,7 +100,7 @@ export function matAddMat(
   for (let i = 0; i < width; i++) {
     const aCol = a[i]
     const bCol = b[i]
-    const oCol = output[i] || new Array(aCol.length)
+    const oCol = output[i] || (output[i] = new Array(aCol.length))
     for (let j = 0; j < oCol.length; j++) {
       oCol[j] = aCol[j] + bCol[j]
     }
@@ -117,7 +117,7 @@ export function scaleMat(
   const output = out || new Array(width)
   for (let i = 0; i < width; i++) {
     const mCol = mat[i]
-    const oCol = output[i] || new Array(mCol.length)
+    const oCol = output[i] || (output[i] = new Array(mCol.length))
     for (let j = 0; j < oCol.length; j++) {
       oCol[j] = scalar * mCol[j]
     }

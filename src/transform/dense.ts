@@ -7,14 +7,15 @@ import {
   rowMulMat,
   scaleMat,
 } from '../batchMath'
+import { normal } from '../utils/gaussian'
 
 type DenseSeeder = (
   inputSize: number,
   outputSize: number,
 ) => (row: number, column: number) => number
 
-const defaultSeeder: DenseSeeder = inputSize => (row, column) =>
-  (((row + column) % 2 === 0 ? 1 : -1) / Math.sqrt(inputSize)) * Math.random()
+const defaultSeeder: DenseSeeder = inputSize => () =>
+  normal() / Math.sqrt(inputSize)
 
 export function denseTransform(
   outputSize: number,

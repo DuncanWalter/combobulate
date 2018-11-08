@@ -1,10 +1,10 @@
 import { TransformationFactory, SimplifiedTransformation } from '.'
 import { vector, rowZip, add, mapRow } from '../batchMath'
+import { normal } from '../utils/gaussian'
 
 type BiasSeeder = (inputSize: number) => (index: number) => number
 
-const defaultSeed: BiasSeeder = size => index =>
-  ((index % 2 === 0 ? 1 : -1) / Math.sqrt(size)) * Math.random()
+const defaultSeed: BiasSeeder = size => () => normal() / Math.sqrt(size)
 
 export function biasTransform(
   seeder: BiasSeeder = defaultSeed,

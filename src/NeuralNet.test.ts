@@ -1,5 +1,10 @@
 import NeuralNet from './NeuralNet'
-import { denseTransform, guardTransform, logicalTransform } from './transform'
+import {
+  denseTransform,
+  guardTransform,
+  logicalTransform,
+  biasTransform,
+} from './transform'
 import { createPredictor } from './createPredictor'
 import { rowZip } from './batchMath'
 import { createModel } from './createModel'
@@ -16,13 +21,11 @@ jest.setTimeout(1000000)
 const not = a => 1 - a
 const and = (a, b) => Math.sqrt(a * b)
 const or = (a, b) => (a + b) / (1 + a * b)
-const nand = (a, b) => not(and(a, b))
-const nor = (a, b) => not(or(a, b))
 const imp = (a, b) => or(not(a), b)
 const nimp = (a, b) => not(imp(b, a))
 const xor = (a, b) => or(a, b) - and(a, b)
 const eq = (a, b) => not(xor(a, b))
-const ops = [and, or, nor, nand, imp, nimp, xor, eq]
+const ops = [xor, eq] // [and, or, imp, nimp, xor, eq]
 
 // Preserve a reasonable distribution
 // of outputs in high-arity operations
@@ -66,7 +69,7 @@ function mean(xs: number[]) {
 }
 
 test('Creating, training, and validating a model runs without crashing', done => {
-  const arity = 4
+  const arity = 5
   const samples = 32
   const operation = createOperation(arity)
 
@@ -99,14 +102,19 @@ test('Creating, training, and validating a model runs without crashing', done =>
     inputSize: arity,
     transformations: [
       guardTransform(),
+      biasTransform(),
       denseTransform(24),
+      logicalTransform(16),
+      logicalTransform(16),
+      logicalTransform(16),
+      logicalTransform(16),
       logicalTransform(16),
       logicalTransform(8),
       denseTransform(1),
     ],
   })
 
-  const config = { learningRate: 0.005, inertia: 0.7 }
+  const config = { learningRate: 0.01, inertia: 0.92 }
   const predict = createPredictor(net, config)
   const model = createModel(net, {
     config: () => config,
@@ -131,5 +139,5 @@ test('Creating, training, and validating a model runs without crashing', done =>
     )
   }
 
-  model.train(5000, validate).then(done)
+  model.train(2000, validate).then(done)
 })

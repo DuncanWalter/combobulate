@@ -5,6 +5,7 @@ import { biasTransform } from './bias'
 import { denseTransform } from './dense'
 import { selfNormalizingZedTransform } from './selfNormalizingZed'
 import { swoopTransform } from './swoop'
+import { laconicTransform } from './laconic'
 
 export function logicalTransform(outputSize: number) {
   // return splitTransform(
@@ -20,7 +21,7 @@ export function logicalTransform(outputSize: number) {
   //   ),
   // )
   return pipeTransform(
-    denseTransform(outputSize),
+    laconicTransform(outputSize),
     biasTransform(),
     swoopTransform(),
   )

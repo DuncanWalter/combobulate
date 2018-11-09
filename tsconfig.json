@@ -3,7 +3,7 @@
     "allowSyntheticDefaultImports": true,
     "strict": true,
     "downlevelIteration": true,
-    "lib": ["ES6"],
+    "lib": ["ES2016"],
     "target": "ES2015",
     "moduleResolution": "node",
     "declaration": true,

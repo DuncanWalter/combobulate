@@ -114,7 +114,7 @@ test('Creating, training, and validating a model runs without crashing', done =>
     ],
   })
 
-  const config = { learningRate: 0.01, inertia: 0.92 }
+  const config = { learningRate: 0.004, inertia: 0.92 }
   const predict = createPredictor(net, config)
   const model = createModel(net, {
     config: () => config,

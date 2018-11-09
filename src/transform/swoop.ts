@@ -2,26 +2,27 @@ import { TransformationFactory } from '.'
 import { mapRow, rowZip, mul } from '../batchMath'
 
 // SNN ideal constants
-const a = 0.03567
-const b = 2.7844
-const c = 0.47787
+const a = 0.19138
+const b = 4.50135
+const c = 0.25634
 const ib = 1 / b
+const cb = c * b
 
 const zoom = (s: number, f: (x: number) => number) => (x: number) =>
   s * f(x / s)
 
-const swoop = zoom(c, x => {
+const swoop = (x: number) => {
   if (x >= 0) {
-    return a * x - (1 / (ib + x) - b)
+    return a * x - (c / (ib + x) - cb)
   } else {
-    return a * x + (1 / (ib - x) - b)
+    return a * x + (c / (ib - x) - cb)
   }
-})
+}
 
-const swoopGradient = zoom(c, x => {
+const swoopGradient = (x: number) => {
   const dy = 1 / (ib + Math.abs(x))
-  return a + dy * dy
-})
+  return a + c * dy * dy
+}
 
 export function swoopTransform(): TransformationFactory {
   return ({ size }) => ({

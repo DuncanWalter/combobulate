@@ -25,7 +25,7 @@ const imp = (a, b) => or(not(a), b)
 const nimp = (a, b) => not(imp(b, a))
 const xor = (a, b) => or(a, b) - and(a, b)
 const eq = (a, b) => not(xor(a, b))
-const ops = [xor, eq] // [and, or, imp, nimp, xor, eq]
+const ops = [and, or, imp, nimp, xor, eq]
 
 // Preserve a reasonable distribution
 // of outputs in high-arity operations
@@ -69,7 +69,7 @@ function mean(xs: number[]) {
 }
 
 test('Creating, training, and validating a model runs without crashing', done => {
-  const arity = 5
+  const arity = 10
   const samples = 32
   const operation = createOperation(arity)
 
@@ -84,6 +84,7 @@ test('Creating, training, and validating a model runs without crashing', done =>
   }
 
   const validationData = sampleOperation()
+  console.log(validationData.map(({ output: [error] }) => error))
 
   // A baseline random model for
   // evaluating model success.
@@ -102,19 +103,17 @@ test('Creating, training, and validating a model runs without crashing', done =>
     inputSize: arity,
     transformations: [
       guardTransform(),
-      biasTransform(),
-      denseTransform(24),
+      logicalTransform(64),
+      logicalTransform(64),
+      logicalTransform(48),
+      logicalTransform(32),
       logicalTransform(16),
-      logicalTransform(16),
-      logicalTransform(16),
-      logicalTransform(16),
-      logicalTransform(16),
-      logicalTransform(8),
+      // logicalTransform(8),
       denseTransform(1),
     ],
   })
 
-  const config = { learningRate: 0.004, inertia: 0.92 }
+  const config = { learningRate: 0.02, inertia: 0.92 }
   const predict = createPredictor(net, config)
   const model = createModel(net, {
     config: () => config,

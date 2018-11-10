@@ -1,8 +1,9 @@
 import { TransformationFactory, SimplifiedTransformation } from '.'
 import { normal } from '../utils/gaussian'
 import { matrix, scaleMat, matAddMat } from '../batchMath'
+import { denseTransform } from './dense'
 
-const { sqrt, PI, E, ceil, random } = Math
+const { sqrt, PI, E, ceil, random, abs } = Math
 
 // function sum<T>(xs: T[], f: (t: T) => number): number {
 //   let sum = 0
@@ -36,16 +37,16 @@ const { sqrt, PI, E, ceil, random } = Math
  * and information quantity representations.
  * Safe for n and k up to roughly 10 ^ 15.
  */
-function combinations(n: number, k: number) {
-  if (n === k || k === 0) {
-    return 1
-  }
+// function combinations(n: number, k: number) {
+//   if (n === k || k === 0) {
+//     return 1
+//   }
 
-  const nLen = Math.log2(n / E) * n
-  const dLen = Math.log2((n - k) / E) * (n - k) + Math.log2(k / E) * k
+//   const nLen = Math.log2(n / E) * n
+//   const dLen = Math.log2((n - k) / E) * (n - k) + Math.log2(k / E) * k
 
-  return sqrt(n / ((n - k) * k * 2 * PI)) * 2 ** (nLen - dLen)
-}
+//   return sqrt(n / ((n - k) * k * 2 * PI)) * 2 ** (nLen - dLen)
+// }
 
 /**
  * binary search solver for
@@ -70,18 +71,14 @@ function solve(target: number, expression: (x: number) => number) {
 }
 
 /**
+ *
  * @param inputSize
  * @param outputSize
  * @param redundancy
  * @param density
  */
-function bandwidth(n: number, m: number, r: number, d: number) {
-  return ceil(
-    solve(
-      r * combinations(n - 1, d - 1),
-      x => x * combinations((n / m) * x - 1, d - 1),
-    ),
-  )
+function laconicBandwidth(n: number, m: number, r: number) {
+  return ceil(solve(n ** r * n - 1, x => x * ((n / m) * x - 1)))
 }
 
 function* range(n: number) {
@@ -101,14 +98,24 @@ function shuffle(arr: number[]) {
 }
 
 /**
+ * @param inputSize
  * @param outputSize
  * @param bandwidth
  */
-function mask(m: number, b: number) {
-  return shuffle([...range(m)]).slice(0, b)
+function laconicMask(n: number, m: number, b: number): number[][] {
+  const s = (function*() {
+    while (true) {
+      yield* shuffle([...range(m)])
+    }
+  })()
+
+  function next() {
+    return s.next().value
+  }
+
+  return matrix(n, b, next)
 }
 
-// TODO: math for ideal starting weights
 type LaconicSeeder = (
   inputSize: number,
   outputSize: number,
@@ -126,8 +133,7 @@ const defaultSeeder: LaconicSeeder = (inputSize, outputSize, bandwidth) => () =>
  */
 export function laconicTransform(
   outputSize: number,
-  redundancy: number = 2,
-  density: number = 2,
+  redundancy: number = 0.2,
   seeder: LaconicSeeder = defaultSeeder,
 ): TransformationFactory<
   SimplifiedTransformation<{
@@ -136,42 +142,52 @@ export function laconicTransform(
   }>
 > {
   return function laconic({ size: inputSize, serializedContent }) {
-    const b = bandwidth(inputSize, outputSize, redundancy, density)
-    const m = mask(outputSize, b)
-    const weights = matrix(b, inputSize, seeder(inputSize, outputSize, b))
-    let deltas = matrix(b, inputSize, () => 0)
-    const connections = [...range(inputSize)].map(i =>
-      m.map(j => (i + j) % outputSize),
+    const bandwidth = laconicBandwidth(inputSize, outputSize, redundancy)
+    if (bandwidth > outputSize / 1.5) {
+      console.warn(
+        'Laconic transform defaulting to dense transform due to performance comparability',
+      )
+      return denseTransform(outputSize)({ size: inputSize, serializedContent })
+    }
+    const connections = laconicMask(inputSize, outputSize, bandwidth)
+    const weights = matrix(
+      inputSize,
+      bandwidth,
+      seeder(inputSize, outputSize, bandwidth),
     )
-    const backConnections = [...range(outputSize)].map(i =>
-      [...range(inputSize)]
-        .filter(j => m.includes((i + j) % outputSize))
-        .map(j => ({
-          source: j,
-          index: m.indexOf((i + j) % outputSize),
-        })),
-    )
+
+    let deltas = matrix(inputSize, bandwidth, () => 0)
 
     return {
       type: 'simplified',
       passForward(input) {
-        const output = new Array(outputSize).fill(0)
+        const output = new Array(outputSize)
+        for (let i = 0; i < outputSize; i++) {
+          output[i] = 0
+        }
         for (let i = 0; i < inputSize; i++) {
-          for (let j = 0; j < b; j++) {
-            output[connections[i][j]] += input[i] * weights[j][i]
+          const w = weights[i]
+          const c = connections[i]
+          for (let j = 0; j < bandwidth; j++) {
+            output[c[j]] += input[i] * w[j]
           }
         }
         return output
       },
       passBack(error, input) {
-        const backProp = new Array(inputSize).fill(0)
-        for (let i = 0; i < outputSize; i++) {
-          const sources = backConnections[i]
-          for (let j = 0; j < sources.length; j++) {
-            const source = sources[j].source
-            const address = sources[j].index
-            backProp[source] += error[i] * weights[address][source]
-            deltas[address][source] += error[i] * input[source]
+        const backProp = new Array(inputSize)
+        for (let i = 0; i < inputSize; i++) {
+          backProp[i] = 0
+        }
+        for (let i = 0; i < inputSize; i++) {
+          const w = weights[i]
+          const c = connections[i]
+          const d = deltas[i]
+          let k = 0
+          for (let j = 0; j < bandwidth; j++) {
+            k = c[j]
+            backProp[k] += error[k] * w[j]
+            d[j] += error[k] * input[i]
           }
         }
         return backProp
@@ -179,12 +195,11 @@ export function laconicTransform(
       applyLearning(config) {
         const { learningRate, inertia = 0 } = config
         const dialation = 1 / (1 - inertia)
-        const update = scaleMat(learningRate / dialation, deltas)
-        matAddMat(weights, update, weights)
+        matAddMat(weights, scaleMat(learningRate / dialation, deltas), weights)
         scaleMat((dialation - 1) / dialation, deltas, deltas)
       },
       clean() {
-        deltas = matrix(b, inputSize, () => 0)
+        deltas = matrix(inputSize, bandwidth, () => 0)
       },
       serialize() {
         return JSON.stringify('TODO:')

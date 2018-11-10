@@ -21,7 +21,7 @@ export function logicalTransform(outputSize: number) {
   //   ),
   // )
   return pipeTransform(
-    laconicTransform(outputSize),
+    denseTransform(outputSize),
     biasTransform(),
     swoopTransform(),
   )
